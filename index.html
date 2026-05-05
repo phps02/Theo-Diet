@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Theo — Diet</title>
+<meta name="description" content="Theo's NRC-balanced raw recipe with calorie multiplier, AM/PM splitting, batch calculator, batch prep tracker, and NRC compliance dashboard.">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f4f0e8;
+    --bg-warm: #ebe5d6;
+    --paper: #ffffff;
+    --ink: #1a1814;
+    --ink-soft: #3a3530;
+    --ink-muted: #75695c;
+    --line: #d4c9b0;
+    --line-soft: #e8dfca;
+    --accent: #c2410c;
+    --accent-soft: #fdba74;
+    --gold: #b8892a;
+    --moss: #4a6741;
+    --slate: #2d4a5e;
+    --plum: #6b2d4a;
+    --good: #4a6741;
+    --good-bg: rgba(74, 103, 65, 0.08);
+    --warn: #b8892a;
+    --warn-bg: rgba(184, 137, 42, 0.10);
+    --bad: #b91c1c;
+    --bad-bg: rgba(185, 28, 28, 0.06);
+    --info: #2d4a5e;
+    --info-bg: rgba(45, 74, 94, 0.08);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    min-height: 100vh;
+    background-image:
+      radial-gradient(circle at 20% 10%, rgba(184, 92, 62, 0.06) 0%, transparent 40%),
+      radial-gradient(circle at 80% 80%, rgba(74, 103, 65, 0.05) 0%, transparent 40%);
+  }
+  .care-hub-back {
+    position: fixed; top: 12px; right: 12px; z-index: 9999;
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 14px; background: rgba(26, 24, 20, 0.85);
+    color: #fdba74; text-decoration: none;
+    border: 1px solid rgba(184, 137, 42, 0.4); border-radius: 20px;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    letter-spacing: 0.08em; text-transform: uppercase; font-weight: 500;
+    backdrop-filter: blur(8px); transition: all 0.15s;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+  .care-hub-back:hover { background: rgba(194, 65, 12, 0.95); color: #fff; border-color: var(--accent); }
+  @media (max-width: 640px) { .care-hub-back { top: 8px; right: 8px; padding: 6px 10px; font-size: 10px; } }
+
+  .sync-pill {
+    position: fixed; top: 12px; left: 12px; z-index: 9999;
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px; background: var(--paper);
+    color: var(--ink-muted); border: 1px solid var(--line);
+    border-radius: 14px;
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  .sync-pill.saving { color: var(--gold); border-color: var(--gold); }
+  .sync-pill.saved  { color: var(--good); border-color: var(--good); }
+  .sync-pill.error  { color: var(--bad);  border-color: var(--bad); }
+  .sync-pill.offline{ color: var(--bad);  border-color: var(--bad); }
+
+  .hero { max-width: 1300px; margin: 0 auto; padding: 32px 32px 16px; }
+  .hero-eyebrow { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.25em; color: var(--ink-muted); text-transform: uppercase; margin-bottom: 6px; }
+  .hero-title { font-family: 'Fraunces', serif; font-size: clamp(26px, 4vw, 38px); font-weight: 600; line-height: 1.1; letter-spacing: -0.02em; margin-bottom: 8px; }
+  .hero-title em { font-style: italic; color: var(--accent); font-weight: 500; }
+  .hero-sub { font-size: 14px; color: var(--ink-muted); max-width: 720px; }
+
+  .controls {
+    max-width: 1300px; margin: 18px auto 0; padding: 0 32px;
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px;
+  }
+  .ctrl-card {
+    background: var(--paper); border: 1px solid var(--line); border-radius: 6px;
+    padding: 10px 14px; position: relative;
+  }
+  .ctrl-card::before { content: ''; position: absolute; top: 0; left: 0; width: 3px; height: 100%; background: var(--accent); }
+  .ctrl-card:nth-child(2)::before { background: var(--moss); }
+  .ctrl-card:nth-child(3)::before { background: var(--slate); }
+  .ctrl-card:nth-child(4)::before { background: var(--gold); }
+  .ctrl-card:nth-child(5)::before { background: var(--plum); }
+  .ctrl-label {
+    font-family: 'JetBrains Mono', monospace; font-size: 8px;
+    letter-spacing: 0.15em; color: var(--ink-muted);
+    text-transform: uppercase; margin-bottom: 4px;
+  }
+  .ctrl-input {
+    width: 100%; border: none; background: transparent;
+    font-family: 'Fraunces', serif; font-size: 22px; font-weight: 600;
+    color: var(--ink); outline: none; padding: 0;
+  }
+  .ctrl-input:focus { color: var(--accent); }
+  .ctrl-meta { font-size: 11px; color: var(--ink-muted); margin-top: 2px; }
+  .ctrl-toggle {
+    display: inline-flex; gap: 0; border: 1px solid var(--line); border-radius: 4px;
+    overflow: hidden; margin-top: 4px;
+  }
+  .ctrl-toggle button {
+    background: var(--paper); color: var(--ink-muted); border: none;
+    padding: 4px 10px;
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    letter-spacing: 0.05em; text-transform: uppercase; cursor: pointer;
+  }
+  .ctrl-toggle button.active { background: var(--ink); color: var(--bg); }
+
+  .section { max-width: 1300px; margin: 24px auto 0; padding: 0 32px; }
+  .panel {
+    background: var(--paper); border: 1px solid var(--line); border-radius: 8px;
+    padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .panel-title { font-family: 'Fraunces', serif; font-size: 18px; font-weight: 600; margin-bottom: 4px; }
+  .panel-sub { font-size: 12px; color: var(--ink-muted); margin-bottom: 18px; }
+
+  /* Batch tracker */
+  .batch-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 18px;
+    align-items: start;
+  }
+  @media (max-width: 700px) { .batch-grid { grid-template-columns: 1fr; } }
+  .batch-stat {
+    background: var(--bg-warm); border-radius: 6px; padding: 14px 16px;
+    border-left: 3px solid var(--accent);
+  }
+  .batch-stat.due-soon  { border-left-color: var(--warn); background: var(--warn-bg); }
+  .batch-stat.overdue   { border-left-color: var(--bad);  background: var(--bad-bg); }
+  .batch-stat.healthy   { border-left-color: var(--good); background: var(--good-bg); }
+  .batch-stat-label {
+    font-family: 'JetBrains Mono', monospace; font-size: 9px;
+    letter-spacing: 0.18em; color: var(--ink-muted);
+    text-transform: uppercase; margin-bottom: 4px;
+  }
+  .batch-stat-val {
+    font-family: 'Fraunces', serif; font-size: 18px; font-weight: 600;
+    color: var(--ink); line-height: 1.2;
+  }
+  .batch-stat-meta { font-size: 12px; color: var(--ink-muted); margin-top: 2px; }
+  .batch-progress {
+    margin-top: 18px;
+    background: var(--line-soft); height: 16px; border-radius: 3px;
+    position: relative; overflow: hidden;
+  }
+  .batch-progress-fill {
+    position: absolute; left: 0; top: 0; height: 100%;
+    background: var(--good); transition: width 0.3s, background 0.3s;
+  }
+  .batch-progress-fill.due-soon { background: var(--warn); }
+  .batch-progress-fill.overdue  { background: var(--bad); }
+  .batch-progress-label {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    color: var(--ink-muted); margin-top: 6px; letter-spacing: 0.05em;
+  }
+  .batch-actions {
+    margin-top: 18px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+  }
+  .btn {
+    background: var(--accent); border: 1px solid var(--accent); color: #fff;
+    padding: 8px 14px; border-radius: 6px;
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    letter-spacing: 0.08em; text-transform: uppercase; font-weight: 500;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .btn:hover { background: #a23808; border-color: #a23808; }
+  .btn-outline {
+    background: var(--paper); color: var(--ink-muted); border-color: var(--line);
+  }
+  .btn-outline:hover { background: var(--bg-warm); color: var(--ink); }
+  .batch-date-input {
+    border: 1px solid var(--line); border-radius: 4px; padding: 6px 10px;
+    font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    background: var(--paper); color: var(--ink);
+  }
+
+  /* Ingredient table */
+  .ingredient-table { width: 100%; border-collapse: collapse; table-layout: auto; }
+  .ingredient-table th {
+    text-align: left; padding: 8px 10px;
+    font-family: 'JetBrains Mono', monospace; font-size: 9px;
+    letter-spacing: 0.18em; color: var(--ink-muted);
+    text-transform: uppercase; border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+  }
+  .ingredient-table th.numeric { text-align: right; }
+  .ingredient-table td {
+    padding: 7px 10px; border-bottom: 1px solid var(--line-soft); font-size: 13px;
+  }
+  .ingredient-table td.first-col { white-space: normal; line-height: 1.3; }
+  .ingredient-table td.numeric {
+    text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    color: var(--ink-soft); white-space: nowrap;
+  }
+  .ingredient-table tr.group-header td {
+    background: var(--bg-warm); font-family: 'Fraunces', serif; font-weight: 600;
+    font-size: 12px; padding: 6px 10px; color: var(--ink); border-bottom: none;
+    letter-spacing: 0.02em;
+  }
+  .ingredient-table tr.group-totals td {
+    background: rgba(212, 201, 176, 0.18); font-style: italic;
+    font-size: 11px; color: var(--ink-muted); padding: 5px 10px; border-bottom: none;
+  }
+  .ingredient-table tr.group-totals td.numeric {
+    font-family: 'JetBrains Mono', monospace; font-style: normal;
+    color: var(--ink-soft); font-weight: 600;
+  }
+  .ingredient-table tr.totals td {
+    background: var(--bg-warm); font-weight: 600; padding: 9px 10px;
+    border-top: 2px solid var(--ink); border-bottom: none;
+  }
+  .ingredient-name { color: var(--ink); }
+  .ingredient-note { color: var(--ink-muted); font-size: 11px; margin-left: 6px; font-style: italic; }
+
+  /* NRC table */
+  .nrc-table { width: 100%; border-collapse: collapse; }
+  .nrc-table thead th {
+    text-align: left; padding: 8px 10px;
+    font-family: 'JetBrains Mono', monospace; font-size: 9px;
+    letter-spacing: 0.18em; color: var(--ink-muted);
+    text-transform: uppercase; border-bottom: 1px solid var(--line);
+  }
+  .nrc-table thead th.numeric { text-align: right; }
+  .nrc-table tbody tr.group-row td {
+    background: var(--bg-warm);
+    font-family: 'Fraunces', serif; font-weight: 600; font-size: 12px;
+    padding: 8px 10px; color: var(--ink);
+  }
+  .nrc-table tbody td {
+    padding: 6px 10px; border-bottom: 1px solid var(--line-soft); font-size: 12.5px;
+  }
+  .nrc-table tbody td.numeric {
+    text-align: right; font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px; color: var(--ink-soft); white-space: nowrap;
+  }
+  .nrc-bar-cell { width: 220px; padding: 6px 10px !important; }
+  .nrc-bar-track {
+    position: relative; width: 100%; height: 14px;
+    background: var(--line-soft); border-radius: 2px; overflow: visible;
+  }
+  .nrc-bar-fill {
+    position: absolute; left: 0; top: 0; height: 100%; border-radius: 2px;
+  }
+  .nrc-bar-fill.good { background: var(--good); }
+  .nrc-bar-fill.warn { background: var(--warn); }
+  .nrc-bar-fill.bad  { background: var(--bad); }
+  .nrc-bar-fill.info { background: var(--info); }
+  .nrc-bar-tick {
+    position: absolute; top: -2px; width: 1.5px; height: 18px;
+    background: var(--ink-muted);
+  }
+  .nrc-bar-tick.ra { background: var(--ink); }
+  .nrc-status {
+    display: inline-block; padding: 2px 8px; border-radius: 10px;
+    font-family: 'JetBrains Mono', monospace; font-size: 9px;
+    letter-spacing: 0.08em; text-transform: uppercase; font-weight: 500;
+  }
+  .nrc-status.good { background: var(--good-bg); color: var(--good); }
+  .nrc-status.warn { background: var(--warn-bg); color: var(--warn); }
+  .nrc-status.bad  { background: var(--bad-bg);  color: var(--bad); }
+  .nrc-status.info { background: var(--info-bg); color: var(--info); }
+
+  .interaction-card {
+    background: var(--paper); border: 1px solid var(--line); border-radius: 6px;
+    padding: 14px 16px; margin-bottom: 10px;
+    border-left: 3px solid var(--ink-muted);
+  }
+  .interaction-card.good { border-left-color: var(--good); }
+  .interaction-card.warn { border-left-color: var(--warn); }
+  .interaction-card.bad  { border-left-color: var(--bad); }
+  .interaction-card.info { border-left-color: var(--info); }
+  .interaction-title {
+    font-family: 'Fraunces', serif; font-size: 14px; font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .interaction-numbers {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    color: var(--ink-muted); margin-bottom: 6px;
+  }
+  .interaction-numbers strong { color: var(--ink); }
+  .interaction-body { font-size: 13px; color: var(--ink-soft); line-height: 1.5; }
+
+  .footer-meta {
+    max-width: 1300px; margin: 24px auto 32px; padding: 0 32px;
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    letter-spacing: 0.1em; color: var(--ink-muted); text-transform: uppercase;
+    display: flex; gap: 16px; flex-wrap: wrap;
+  }
+  .footer-meta a { color: var(--accent); text-decoration: none; }
+  .footer-meta a:hover { text-decoration: underline; }
+
+  details.advanced {
+    background: var(--paper); border: 1px solid var(--line); border-radius: 8px;
+    padding: 14px 18px; margin-top: 14px;
+  }
+  details.advanced summary {
+    cursor: pointer; font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    letter-spacing: 0.18em; color: var(--ink-muted); text-transform: uppercase;
+    list-style: none; user-select: none;
+  }
+  details.advanced summary::-webkit-details-marker { display: none; }
+  details.advanced summary::before { content: '▸ '; color: var(--accent); }
+  details.advanced[open] summary::before { content: '▾ '; }
+  details.advanced[open] summary { margin-bottom: 12px; }
+  details.advanced .small-note { font-size: 12px; color: var(--ink-muted); margin-top: 8px; line-height: 1.5; }
+
+  .reset-btn {
+    background: var(--paper); border: 1px solid var(--line); color: var(--ink-muted);
+    padding: 6px 12px; border-radius: 14px;
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    letter-spacing: 0.05em; text-transform: uppercase; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .reset-btn:hover { background: var(--bg-warm); color: var(--ink); }
+</style>
+</head>
+<body>
+
+<a href="https://phps02.github.io/Theo-Care-Hub/" class="care-hub-back">← Care Hub</a>
+<span class="sync-pill" id="sync-pill">⟳ Loading…</span>
+
+<header class="hero">
+  <div class="hero-eyebrow">Diet · NRC 2006 · Adult Maintenance</div>
+  <h1 class="hero-title">Theo's <em>raw recipe</em></h1>
+  <p class="hero-sub">Formulated by Ronny LeJeune (Perfectly Rawsome) on October 25, 2024 for 1850 kcal/day at 85 lb ideal weight. Settings and batch dates sync to Google Sheet across devices.</p>
+</header>
+
+<section class="controls">
+  <div class="ctrl-card">
+    <div class="ctrl-label">Calorie multiplier</div>
+    <input type="number" id="ctrl-mult" class="ctrl-input" min="0.5" max="2" step="0.05" value="1">
+    <div class="ctrl-meta" id="ctrl-mult-meta">×1850 = 1850 kcal/day</div>
+  </div>
+  <div class="ctrl-card">
+    <div class="ctrl-label">AM portion %</div>
+    <input type="number" id="ctrl-am" class="ctrl-input" min="0" max="100" step="1" value="50">
+    <div class="ctrl-meta" id="ctrl-am-meta">PM = 50%</div>
+  </div>
+  <div class="ctrl-card">
+    <div class="ctrl-label">Batch days</div>
+    <input type="number" id="ctrl-batch" class="ctrl-input" min="1" max="90" step="1" value="44">
+    <div class="ctrl-meta" id="ctrl-batch-meta">44-day batch</div>
+  </div>
+  <div class="ctrl-card">
+    <div class="ctrl-label">Weights</div>
+    <div class="ctrl-toggle" id="ctrl-form">
+      <button data-form="raw" class="active">raw</button>
+      <button data-form="dry">dry</button>
+    </div>
+    <div class="ctrl-meta">switch all weights</div>
+  </div>
+  <div class="ctrl-card">
+    <div class="ctrl-label">Reset</div>
+    <button class="reset-btn" onclick="resetControls()" style="margin-top:6px;">Reset to defaults</button>
+    <div class="ctrl-meta">mult 1.0, 50/50, 44d, raw</div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="panel">
+    <div class="panel-title">Batch prep tracker</div>
+    <div class="panel-sub">When you make a new batch of food, record the date below. The next batch due date is computed from your batch-days setting (currently <strong id="bt-batch-mirror">44</strong> days).</div>
+    <div id="batch-tracker"></div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="panel">
+    <div class="panel-title">Daily ingredients</div>
+    <div class="panel-sub">Daily portions in oz; batch totals in lb. Toggle <strong>raw / dry</strong> above to switch all weights to freeze-dried equivalents.</div>
+    <table class="ingredient-table" id="ing-table">
+      <thead>
+        <tr>
+          <th class="first-col">Ingredient</th>
+          <th class="numeric">AM</th>
+          <th class="numeric">PM</th>
+          <th class="numeric">Daily</th>
+          <th class="numeric">Batch (lb)</th>
+          <th class="numeric">Daily kcal</th>
+        </tr>
+      </thead>
+      <tbody id="ing-tbody"></tbody>
+    </table>
+  </div>
+</section>
+
+<section class="section">
+  <div class="panel">
+    <div class="panel-title">NRC 2006 compliance</div>
+    <div class="panel-sub">Each nutrient compared against Minimum Requirement and Recommended Allowance. Status reflects how the recipe meets canine adult-maintenance targets at <strong>1850 kcal/day</strong>. Values do not change with the multiplier — nutrient density per kcal is constant.</div>
+    <table class="nrc-table" id="nrc-table"><tbody id="nrc-tbody"></tbody></table>
+    <div style="margin-top: 14px; font-size: 12px; color: var(--ink-muted); line-height: 1.5;">
+      <strong style="color: var(--ink);">Choline note from formulator:</strong> USDA's nutritional database is incomplete for choline. Choline is abundant in raw meats and organs, and dogs synthesize choline endogenously when on high-protein diets. The lower number shown here does not warrant supplementation.
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="panel">
+    <div class="panel-title">Diet × supplement interaction flags</div>
+    <div class="panel-sub">Where the recipe overlaps with Theo's active supplement protocol. Pulled from the protocol documented in the seizure tracker — review when supplements are added or removed.</div>
+    <div id="interaction-list"></div>
+  </div>
+</section>
+
+<section class="section">
+  <details class="advanced">
+    <summary>Substitution guideline</summary>
+    <p class="small-note">Perfectly Rawsome provides a substitution guideline for situations where sourcing specific ingredients becomes unpredictable. The guideline preserves nutritional balance for routine swaps; outside-guideline substitutions require a paid recipe reformulation ($34.67 per 3-change adjustment as of the 2024 quote).</p>
+    <p class="small-note" style="margin-top: 8px;"><em>Add the link or paste the guidance here when you have it on hand.</em></p>
+  </details>
+</section>
+
+<div class="footer-meta">
+  <span>Recipe: Perfectly Rawsome · formulated 2024-10-25</span>
+  <span>·</span>
+  <span>Standard: NRC 2006 · Canine Adult Maintenance</span>
+  <span>·</span>
+  <a href="https://phps02.github.io/Theo-Care-Hub/" target="_self">Care Hub →</a>
+</div>
+
+<script>
+// ───────────────────────────────────────────────────────────────────────────
+// SHEET API — same endpoint as seizure-tracker / timeline tools.
+// New actions: getDietState, setDietState (see Apps Script extension instructions)
+// ───────────────────────────────────────────────────────────────────────────
+const SHEET_API = 'https://script.google.com/macros/s/AKfycbzSnTKRMgsetCnyMIVKbV_MdKkHTKn6P1ogaAamoqzAzfK21mlUrLMdIIFZWLjC9xtLaw/exec';
+const LS_KEY = 'theo_diet_state_v1';
+
+// Defaults baked in for first-load before sheet is wired
+const DEFAULTS = {
+  mult: 1.0,
+  am: 50,
+  batch: 44,
+  form: 'raw',
+  lastBatchDate: '2026-04-26',
+};
+
+// ───────────────────────────────────────────────────────────────────────────
+// RECIPE DATA
+// ───────────────────────────────────────────────────────────────────────────
+const RECIPE_KCAL_BASE = 1850;
+
+const MEAT_FLAT = [
+  { name: 'Duck Tenders, skinless', raw: 14.43, dry: 3.54, kcal: 520 },
+  { name: 'Bison Tripe',            raw: 3.62,  dry: 0.57, kcal: 231 },
+  { name: 'Duck Heart',             raw: 3.26,  dry: 0.97, kcal: 129 },
+  { name: 'Duck Neck, skinless',    raw: 2.71,  dry: 0.80, kcal: 89  },
+  { name: 'Duck Feet',              raw: 2.71,  dry: 1.04, kcal: 155 },
+  { name: 'Beef Heart',             raw: 1.81,  dry: 0.41, kcal: 57  },
+  { name: 'Beef Liver',             raw: 1.44,  dry: 0.42, kcal: 56  },
+];
+
+const FISH_GROUP = [
+  { name: 'Anchovies',                 raw: 2.42, dry: 0.88, kcal: 144 },
+  { name: 'Sardines, canned in water', raw: 2.42, dry: 0.98, kcal: 143 },
+];
+
+const SUPPLEMENTS = [
+  { name: "Dr. Harvey's Paradigm",                 amount: 1.00,  unit: 'scoop', kcal: 64  },
+  { name: 'Ghee, grassfed',                        amount: 1.66,  unit: 'tbsp',  kcal: 173 },
+  { name: 'Hempseed Oil',                          amount: 2.00,  unit: 'tsp',   kcal: 88  },
+  { name: 'NOW Zinc Picolinate, 50mg',             amount: 1.00,  unit: 'pill',  kcal: 0,   note: 'whole pill — give with one meal' },
+  { name: 'Solgar Liquid Vitamin E (14.9IU/drop)', amount: 11.00, unit: 'drop',  kcal: 0   },
+  { name: 'NOW Pure Kelp Powder (450mcg/scoop)',   amount: 0.90,  unit: 'scoop', kcal: 0   },
+];
+
+// NRC data (page 6 of formulator's report)
+const NRC_DATA = [
+  { group: 'Amino Acids', rows: [
+    { name: 'Crude Protein',           actual: 196.745, min: 37.00, ra: 46.25, unit: 'g' },
+    { name: 'Arginine',                actual: 10.152,  min: 1.30,  ra: 1.63,  unit: 'g' },
+    { name: 'Histidine',               actual: 4.266,   min: 0.68,  ra: 0.89,  unit: 'g' },
+    { name: 'Isoleucine',              actual: 7.322,   min: 1.39,  ra: 1.76,  unit: 'g' },
+    { name: 'Methionine',              actual: 4.276,   min: 1.20,  ra: 1.54,  unit: 'g' },
+    { name: 'Methionine + Cystine',    actual: 6.522,   min: 2.41,  ra: 3.02,  unit: 'g' },
+    { name: 'Leucine',                 actual: 13.014,  min: 2.50,  ra: 3.15,  unit: 'g' },
+    { name: 'Lysine',                  actual: 13.434,  min: 1.30,  ra: 1.63,  unit: 'g' },
+    { name: 'Phenylalanine',           actual: 6.491,   min: 1.67,  ra: 2.09,  unit: 'g' },
+    { name: 'Phenylalanine + Tyrosine',actual: 12.152,  min: 2.74,  ra: 3.42,  unit: 'g' },
+    { name: 'Threonine',               actual: 6.625,   min: 1.57,  ra: 2.00,  unit: 'g' },
+    { name: 'Tryptophan',              actual: 2.113,   min: 0.52,  ra: 0.65,  unit: 'g' },
+    { name: 'Valine',                  actual: 7.855,   min: 1.81,  ra: 2.28,  unit: 'g' },
+    { name: 'Taurine',                 actual: 0.779,   min: 0.00,  ra: 0.00,  unit: 'g', noTarget: true },
+  ]},
+  { group: 'Fats & Fatty Acids', rows: [
+    { name: 'Total Fat',               actual: 105.886, min: 18.50, ra: 25.53, unit: 'g' },
+    { name: 'Linoleic Acid',           actual: 11.701,  min: 4.44,  ra: 5.18,  unit: 'g' },
+    { name: 'Alpha-Linolenic Acid',    actual: 2.030,   min: 0.17,  ra: 0.20,  unit: 'g' },
+    { name: 'Arachidonic Acid',        actual: 0.441,   min: 0.00,  ra: 0.00,  unit: 'g', noTarget: true },
+    { name: 'EPA + DHA',               actual: 2.102,   min: 0.20,  ra: 0.20,  unit: 'g' },
+  ]},
+  { group: 'Vitamins', rows: [
+    { name: 'Vitamin A',         actual: 3255.636, min: 560.55, ra: 701.15, unit: 'mcg' },
+    { name: 'Vitamin C',         actual: 29.463,   min: 0.00,   ra: 0.00,   unit: 'mg', noTarget: true },
+    { name: 'Vitamin D',         actual: 6.307,    min: 5.09,   ra: 6.29,   unit: 'mcg' },
+    { name: 'Vitamin E',         actual: 109.813,  min: 11.10,  ra: 13.88,  unit: 'mg' },
+    { name: 'Vitamin K',         actual: 0.010,    min: 0.00,   ra: 0.00,   unit: 'mg', noTarget: true },
+    { name: 'Thiamin (B1)',      actual: 2.533,    min: 0.83,   ra: 1.04,   unit: 'mg' },
+    { name: 'Riboflavin (B2)',   actual: 4.840,    min: 1.94,   ra: 2.41,   unit: 'mg' },
+    { name: 'Niacin (B3)',       actual: 52.383,   min: 6.29,   ra: 7.86,   unit: 'mg' },
+    { name: 'Pantothenic (B5)',  actual: 12.747,   min: 5.55,   ra: 6.94,   unit: 'mg' },
+    { name: 'Pyridoxine (B6)',   actual: 4.420,    min: 0.56,   ra: 0.69,   unit: 'mg' },
+    { name: 'Biotin (B7)',       actual: 175.812,  min: 0.00,   ra: 0.00,   unit: 'mcg', noTarget: true },
+    { name: 'Folic Acid (B9)',   actual: 260.846,  min: 99.90,  ra: 124.88, unit: 'mcg' },
+    { name: 'Cobalamin (B12)',   actual: 56.628,   min: 12.95,  ra: 16.19,  unit: 'mcg' },
+    { name: 'Choline',           actual: 412.990,  min: 629.00, ra: 786.25, unit: 'mcg', isCholine: true },
+  ]},
+  { group: 'Minerals', rows: [
+    { name: 'Calcium',           actual: 3.528,    min: 0.93,    ra: 1.85,   unit: 'g' },
+    { name: 'Phosphorus',        actual: 3.343,    min: 1.39,    ra: 1.39,   unit: 'g' },
+    { name: 'Magnesium',         actual: 339.533,  min: 83.25,   ra: 277.50, unit: 'mg' },
+    { name: 'Sodium',            actual: 4222.078, min: 138.75,  ra: 370.00, unit: 'mg', highFlag: true },
+    { name: 'Potassium',         actual: 2.964,    min: 1.85,    ra: 1.85,   unit: 'g' },
+    { name: 'Chloride',          actual: 6333.123, min: 555.00,  ra: 555.00, unit: 'mg' },
+    { name: 'Iron',              actual: 41.902,   min: 13.88,   ra: 13.88,  unit: 'mg' },
+    { name: 'Copper',            actual: 7.814,    min: 2.78,    ra: 2.78,   unit: 'mg' },
+    { name: 'Zinc',              actual: 72.790,   min: 27.75,   ra: 27.75,  unit: 'mg' },
+    { name: 'Manganese',         actual: 2.687,    min: 2.22,    ra: 2.22,   unit: 'mg' },
+    { name: 'Selenium',          actual: 261.687,  min: 161.88,  ra: 161.88, unit: 'mcg' },
+    { name: 'Iodine',            actual: 407.000,  min: 323.75,  ra: 407.00, unit: 'mcg' },
+  ]},
+  { group: 'Nutrient Balance', rows: [
+    { name: 'Calcium : Phosphorus',  text: '1.06 : 1', target: '1:1 to 2:1' },
+    { name: 'Linoleic : α-Linolenic',text: '5.75 : 1', target: '~5:1 typical' },
+    { name: 'Omega-6 : Omega-3',     text: '2.88 : 1', target: '<5:1 ideal' },
+  ]},
+];
+
+// Diet × supplement interactions
+const INTERACTIONS = [
+  { title: 'Vitamin B6 — recipe + active B-complex', cls: 'info',
+    numbers: [['Diet','4.4 mg/day'],['Active B-Complex (1 cap)','~25 mg'],['Stable Core (Neuroplex)','8.9 mg'],['Daily total','~38 mg/day'],['NRC RA','0.69 mg'],['Multiple of RA','~55×']],
+    body: 'B6 has been an active dosing question since the P5P → Thorne swap. Currently below the 50 mg target with vet-approved Active B-Complex at 1 cap/day. Well below dose ranges associated with peripheral neuropathy in dogs (>200 mg/kg sustained), but a stacked source: monitor if any new B-vitamin product gets added.' },
+  { title: 'Vitamin E — recipe is already 8× RA', cls: 'warn',
+    numbers: [['Diet','109.8 mg/day (8× RA)'],['Solgar drops in recipe','11 drops × 14.9 IU'],['NRC RA','13.88 mg']],
+    body: 'Recipe-internal Vit E from Solgar drops is already on board. If any future supplement (e.g., a multi-vitamin) adds more Vit E, total can climb fast. NRC SUL for Vit E is high and Theo is well below it, but worth tracking — fat-soluble vitamins accumulate.' },
+  { title: 'Zinc — recipe + 50mg pill is 2.6× RA', cls: 'good',
+    numbers: [['Diet (incl. zinc picolinate)','72.8 mg/day'],['NRC RA','27.75 mg'],['NRC SUL','no formal SUL; AAFCO max 250 mg/kg DM']],
+    body: 'Whole-pill zinc picolinate is part of the recipe. No additional zinc supplements in current protocol. If any external zinc gets added, recompute against ~100 mg AAFCO ceiling for an 87 lb dog at this calorie intake.' },
+  { title: 'Total daily fat — recipe + MCT supplement', cls: 'warn',
+    numbers: [['Recipe fat','105.9 g/day'],['MCT Oil supplement','add ~14 g per tbsp (depends on dose)'],['NRC fat RA','25.5 g (recipe is 4× RA)']],
+    body: 'The recipe already exceeds NRC fat targets meaningfully. MCT Oil on top of this adds calories that aren\'t accounted for in the 1850 kcal target — if dosed at 1 tbsp/day, that\'s ~120 extra kcal (~6.5% above target). Worth adjusting calorie multiplier downward by ~0.93 to compensate, or counting MCT into the daily kcal budget rather than on top of it.' },
+  { title: 'Magnesium — recipe + supplement', cls: 'good',
+    numbers: [['Diet','339.5 mg/day'],['Mag Glycinate supp','50 mg'],['Daily total','~390 mg'],['NRC RA','277.5 mg']],
+    body: 'Combined intake is 1.4× RA, well within tolerable range. Documented kidney-disease contraindication — if any future renal panel flags, this stack becomes reviewable. Currently fine.' },
+  { title: 'Iodine — recipe via kelp', cls: 'good',
+    numbers: [['Diet (kelp powder)','407 mcg/day'],['NRC RA','407 mcg'],['NRC SUL','~1100 mcg']],
+    body: 'Recipe sits exactly at RA. Both thyroid supplements (Liothyronine, SP Canine Thyroid) are currently stopped, so no iodine stacking. Flag this if any thyroid Rx restarts — combining T3/T4 with high kelp can over-suppress endogenous thyroid function.' },
+  { title: 'Sodium — recipe is 11× minimum', cls: 'info',
+    numbers: [['Diet','4,222 mg/day (11× min)'],['NRC min','139 mg'],['NRC RA','370 mg']],
+    body: 'Driven by sardines + anchovies + kelp. Not a problem in healthy dogs — kidneys excrete excess. Becomes relevant if cardiac or renal issues develop, or if Theo is on any sodium-retaining medication. No current concerns.' },
+  { title: 'CBD timing relative to meals', cls: 'info',
+    numbers: [['Recipe fat','105.9 g/day (high-fat)'],['CBD bioavailability with fat','~4× higher than fasted']],
+    body: 'High-fat meal increases CBD absorption ~4×. If CBD is dosed 30–60 min after a meal (vs. on an empty stomach), absorption is more consistent — and more predictable than dosing far from meals. Worth standardizing relative to AM or PM feeding for consistent serum levels.' },
+  { title: 'Calcium : Phosphorus', cls: 'good',
+    numbers: [['Recipe Ca:P','1.06 : 1'],['Healthy adult target','1:1 to 2:1']],
+    body: 'On the lower end of the safe range, which is normal for raw recipes heavy on muscle meat and organs. Bone content (duck necks + duck feet) keeps it above 1:1.' }
+];
+
+// ───────────────────────────────────────────────────────────────────────────
+// State
+// ───────────────────────────────────────────────────────────────────────────
+const state = { ...DEFAULTS };
+
+// ───────────────────────────────────────────────────────────────────────────
+// Helpers
+// ───────────────────────────────────────────────────────────────────────────
+const MS_DAY = 86400000;
+function fmtNum(n, decimals) {
+  if (n === 0) return '0';
+  if (n === null || isNaN(n)) return '—';
+  const d = decimals !== undefined ? decimals : (Math.abs(n) < 1 ? 2 : Math.abs(n) < 10 ? 2 : 1);
+  return n.toFixed(d);
+}
+function fmtAmount(amount, unit) { return fmtNum(amount, 2) + ' ' + unit; }
+function fmtOz(oz) { return fmtNum(oz, 2) + ' oz'; }
+function fmtLb(oz) { return fmtNum(oz / 16, 2) + ' lb'; }
+function getMeatWeight(item) { return state.form === 'dry' ? item.dry : item.raw; }
+function todayISO() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function daysBetween(a, b) {
+  const t1 = new Date(a + 'T00:00').getTime();
+  const t2 = new Date(b + 'T00:00').getTime();
+  return Math.round((t2 - t1) / MS_DAY);
+}
+function addDaysISO(iso, days) {
+  const d = new Date(iso + 'T00:00');
+  d.setDate(d.getDate() + days);
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function formatDateLong(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso + 'T00:00');
+  return d.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// Sync to/from Sheet — with localStorage fallback
+// ───────────────────────────────────────────────────────────────────────────
+function setSyncStatus(status, msg) {
+  const pill = document.getElementById('sync-pill');
+  pill.className = 'sync-pill ' + status;
+  const labels = {
+    saving:  '⟳ Saving…',
+    saved:   '✓ Synced',
+    error:   '⚠ Sync error',
+    offline: '⚠ Offline (cached)',
+    loading: '⟳ Loading…',
+  };
+  pill.textContent = msg || labels[status] || status;
+}
+
+async function fetchState() {
+  setSyncStatus('loading', '⟳ Loading from Sheet…');
+  try {
+    const r = await fetch(SHEET_API + '?action=getDietState&t=' + Date.now(), {cache: 'no-store'});
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const data = await r.json();
+    Object.assign(state, {
+      mult: Number(data.mult) || DEFAULTS.mult,
+      am: Number(data.am) || DEFAULTS.am,
+      batch: Number(data.batch) || DEFAULTS.batch,
+      form: data.form || DEFAULTS.form,
+      lastBatchDate: data.lastBatchDate || DEFAULTS.lastBatchDate,
+    });
+    localStorage.setItem(LS_KEY, JSON.stringify(state));
+    setSyncStatus('saved');
+  } catch (e) {
+    console.warn('fetchState failed, falling back to localStorage:', e);
+    const cached = localStorage.getItem(LS_KEY);
+    if (cached) {
+      try { Object.assign(state, JSON.parse(cached)); } catch (_) {}
+    }
+    setSyncStatus('offline');
+  }
+}
+
+let saveTimeout = null;
+function scheduleSave() {
+  if (saveTimeout) clearTimeout(saveTimeout);
+  saveTimeout = setTimeout(saveState, 500);
+}
+async function saveState() {
+  // Always write to localStorage immediately
+  localStorage.setItem(LS_KEY, JSON.stringify(state));
+  setSyncStatus('saving');
+  try {
+    const r = await fetch(SHEET_API, {
+      method: 'POST',
+      headers: {'Content-Type': 'text/plain;charset=utf-8'},
+      body: JSON.stringify({ action: 'setDietState', ...state })
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    setSyncStatus('saved');
+  } catch (e) {
+    console.warn('saveState failed:', e);
+    setSyncStatus('offline');
+  }
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// Render: ingredient table
+// ───────────────────────────────────────────────────────────────────────────
+function renderIngredients() {
+  const tbody = document.getElementById('ing-tbody');
+  const m = state.mult;
+  const amPct = state.am / 100;
+  const pmPct = 1 - amPct;
+  const batch = state.batch;
+
+  let html = '';
+  let grandAmOz = 0, grandPmOz = 0, grandDailyOz = 0, grandBatchOz = 0, grandKcal = 0;
+
+  function meatRow(item) {
+    const baseOz = getMeatWeight(item);
+    const dailyOz = baseOz * m;
+    const dailyKcal = item.kcal * m;
+    const amOz = dailyOz * amPct;
+    const pmOz = dailyOz * pmPct;
+    const batchOz = dailyOz * batch;
+    grandAmOz += amOz; grandPmOz += pmOz; grandDailyOz += dailyOz; grandBatchOz += batchOz; grandKcal += dailyKcal;
+    return `<tr>
+      <td class="first-col ingredient-name">${item.name}</td>
+      <td class="numeric">${fmtOz(amOz)}</td>
+      <td class="numeric">${fmtOz(pmOz)}</td>
+      <td class="numeric">${fmtOz(dailyOz)}</td>
+      <td class="numeric">${fmtLb(batchOz)}</td>
+      <td class="numeric">${fmtNum(dailyKcal, 0)} kcal</td>
+    </tr>`;
+  }
+
+  // 1. Flat meat list
+  let meatAmOz = 0, meatPmOz = 0, meatDailyOz = 0, meatBatchOz = 0, meatKcal = 0;
+  MEAT_FLAT.forEach(item => {
+    const baseOz = getMeatWeight(item);
+    const dailyOz = baseOz * m;
+    meatAmOz += dailyOz * amPct;
+    meatPmOz += dailyOz * pmPct;
+    meatDailyOz += dailyOz;
+    meatBatchOz += dailyOz * batch;
+    meatKcal += item.kcal * m;
+    html += meatRow(item);
+  });
+  html += `<tr class="group-totals">
+    <td>Meat & organs subtotal</td>
+    <td class="numeric">${fmtOz(meatAmOz)}</td>
+    <td class="numeric">${fmtOz(meatPmOz)}</td>
+    <td class="numeric">${fmtOz(meatDailyOz)}</td>
+    <td class="numeric">${fmtLb(meatBatchOz)}</td>
+    <td class="numeric">${fmtNum(meatKcal, 0)} kcal</td>
+  </tr>`;
+
+  // 2. Fish
+  html += `<tr class="group-header"><td colspan="6">Fish</td></tr>`;
+  let fishAmOz = 0, fishPmOz = 0, fishDailyOz = 0, fishBatchOz = 0, fishKcal = 0;
+  FISH_GROUP.forEach(item => {
+    const baseOz = getMeatWeight(item);
+    const dailyOz = baseOz * m;
+    const dailyKcal = item.kcal * m;
+    const amOz = dailyOz * amPct;
+    const pmOz = dailyOz * pmPct;
+    const batchOz = dailyOz * batch;
+    fishAmOz += amOz; fishPmOz += pmOz; fishDailyOz += dailyOz; fishBatchOz += batchOz; fishKcal += dailyKcal;
+    grandAmOz += amOz; grandPmOz += pmOz; grandDailyOz += dailyOz; grandBatchOz += batchOz; grandKcal += dailyKcal;
+    html += `<tr>
+      <td class="first-col ingredient-name">${item.name}</td>
+      <td class="numeric">${fmtOz(amOz)}</td>
+      <td class="numeric">${fmtOz(pmOz)}</td>
+      <td class="numeric">${fmtOz(dailyOz)}</td>
+      <td class="numeric">${fmtLb(batchOz)}</td>
+      <td class="numeric">${fmtNum(dailyKcal, 0)} kcal</td>
+    </tr>`;
+  });
+  html += `<tr class="group-totals">
+    <td>Fish subtotal</td>
+    <td class="numeric">${fmtOz(fishAmOz)}</td>
+    <td class="numeric">${fmtOz(fishPmOz)}</td>
+    <td class="numeric">${fmtOz(fishDailyOz)}</td>
+    <td class="numeric">${fmtLb(fishBatchOz)}</td>
+    <td class="numeric">${fmtNum(fishKcal, 0)} kcal</td>
+  </tr>`;
+
+  // 3. Supplements
+  html += `<tr class="group-header"><td colspan="6">Supplements & Oils</td></tr>`;
+  let suppKcal = 0;
+  SUPPLEMENTS.forEach(item => {
+    const dailyAmt = item.amount * m;
+    const dailyKcal = item.kcal * m;
+    const amAmt = dailyAmt * amPct;
+    const pmAmt = dailyAmt * pmPct;
+    const batchAmt = dailyAmt * batch;
+    const note = item.note ? `<span class="ingredient-note">${item.note}</span>` : '';
+    suppKcal += dailyKcal;
+    grandKcal += dailyKcal;
+    html += `<tr>
+      <td class="first-col ingredient-name">${item.name}${note}</td>
+      <td class="numeric">${fmtAmount(amAmt, item.unit)}</td>
+      <td class="numeric">${fmtAmount(pmAmt, item.unit)}</td>
+      <td class="numeric">${fmtAmount(dailyAmt, item.unit)}</td>
+      <td class="numeric">${fmtAmount(batchAmt, item.unit)}</td>
+      <td class="numeric">${item.kcal > 0 ? fmtNum(dailyKcal, 0) + ' kcal' : '—'}</td>
+    </tr>`;
+  });
+  html += `<tr class="group-totals">
+    <td>Supplements subtotal</td>
+    <td class="numeric">—</td>
+    <td class="numeric">—</td>
+    <td class="numeric">—</td>
+    <td class="numeric">—</td>
+    <td class="numeric">${fmtNum(suppKcal, 0)} kcal</td>
+  </tr>`;
+
+  // Grand totals
+  html += `<tr class="totals">
+    <td>DAILY TOTAL <span style="color:var(--ink-muted);font-weight:400;font-size:11px;">(meat + fish — supplements not summed)</span></td>
+    <td class="numeric">${fmtOz(grandAmOz)}</td>
+    <td class="numeric">${fmtOz(grandPmOz)}</td>
+    <td class="numeric">${fmtOz(grandDailyOz)}</td>
+    <td class="numeric">${fmtLb(grandBatchOz)}</td>
+    <td class="numeric">${fmtNum(grandKcal, 0)} kcal</td>
+  </tr>`;
+
+  tbody.innerHTML = html;
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// Render: Batch tracker
+// ───────────────────────────────────────────────────────────────────────────
+function renderBatchTracker() {
+  const host = document.getElementById('batch-tracker');
+  document.getElementById('bt-batch-mirror').textContent = state.batch;
+
+  if (!state.lastBatchDate) {
+    host.innerHTML = `
+      <div class="batch-stat">
+        <div class="batch-stat-label">No batch recorded yet</div>
+        <div class="batch-stat-val">When you prep your next batch, click below to record it.</div>
+      </div>
+      <div class="batch-actions">
+        <button class="btn" onclick="recordBatchToday()">📋 Record batch as today</button>
+        <input type="date" class="batch-date-input" id="batch-date-input" value="${todayISO()}" onchange="recordBatchOnDate(this.value)">
+      </div>
+    `;
+    return;
+  }
+
+  const today = todayISO();
+  const last = state.lastBatchDate;
+  const dueDate = addDaysISO(last, state.batch);
+  const daysUsed = daysBetween(last, today);
+  const daysRemaining = daysBetween(today, dueDate);
+  const pctUsed = Math.min(100, Math.max(0, (daysUsed / state.batch) * 100));
+
+  let stateClass = 'healthy';
+  let statusLine = '';
+  if (daysRemaining < 0) {
+    stateClass = 'overdue';
+    statusLine = `⚠ ${Math.abs(daysRemaining)} day${Math.abs(daysRemaining)===1?'':'s'} overdue`;
+  } else if (daysRemaining === 0) {
+    stateClass = 'due-soon';
+    statusLine = '⏰ Due today';
+  } else if (daysRemaining <= 3) {
+    stateClass = 'due-soon';
+    statusLine = `⏰ Due soon (${daysRemaining} day${daysRemaining===1?'':'s'})`;
+  } else {
+    statusLine = `✓ ${daysRemaining} days remaining`;
+  }
+
+  host.innerHTML = `
+    <div class="batch-grid">
+      <div class="batch-stat">
+        <div class="batch-stat-label">Last batch prepared</div>
+        <div class="batch-stat-val">${formatDateLong(last)}</div>
+        <div class="batch-stat-meta">${daysUsed} day${daysUsed===1?'':'s'} ago · ${state.batch}-day batch</div>
+      </div>
+      <div class="batch-stat ${stateClass}">
+        <div class="batch-stat-label">Next batch due</div>
+        <div class="batch-stat-val">${formatDateLong(dueDate)}</div>
+        <div class="batch-stat-meta">${statusLine}</div>
+      </div>
+    </div>
+    <div class="batch-progress" title="${daysUsed} of ${state.batch} days">
+      <div class="batch-progress-fill ${stateClass}" style="width: ${pctUsed}%;"></div>
+    </div>
+    <div class="batch-progress-label">Day ${daysUsed} of ${state.batch} · ${pctUsed.toFixed(0)}% used</div>
+    <div class="batch-actions">
+      <button class="btn" onclick="recordBatchToday()">📋 Record new batch as today</button>
+      <span style="color:var(--ink-muted);font-family:'JetBrains Mono',monospace;font-size:10px;">or set date:</span>
+      <input type="date" class="batch-date-input" id="batch-date-input" value="${state.lastBatchDate}" onchange="recordBatchOnDate(this.value)">
+    </div>
+  `;
+}
+
+function recordBatchToday() {
+  state.lastBatchDate = todayISO();
+  renderBatchTracker();
+  scheduleSave();
+}
+function recordBatchOnDate(iso) {
+  if (!iso) return;
+  state.lastBatchDate = iso;
+  renderBatchTracker();
+  scheduleSave();
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// Render: NRC
+// ───────────────────────────────────────────────────────────────────────────
+function classifyNutrient(row) {
+  if (row.text) return null;
+  if (row.noTarget) return 'good';
+  if (row.isCholine) return 'warn';
+  if (row.actual < row.min) return 'bad';
+  if (row.actual >= row.ra) {
+    if (row.highFlag || (row.min > 0 && row.actual > row.min * 8)) return 'info';
+    return 'good';
+  }
+  return 'warn';
+}
+function nrcStatusLabel(cls) {
+  return {good:'meets RA', warn:'below RA', bad:'below MIN', info:'high'}[cls] || '';
+}
+function renderNRCRow(row) {
+  if (row.text) {
+    return `<tr>
+      <td>${row.name}</td>
+      <td class="numeric">${row.text}</td>
+      <td class="numeric" style="color:var(--ink-muted);">${row.target}</td>
+      <td></td>
+      <td><span class="nrc-status info">ratio</span></td>
+    </tr>`;
+  }
+  const cls = classifyNutrient(row);
+  const maxScale = Math.max(row.actual, row.ra) * 1.15;
+  const fillPct = maxScale > 0 ? (row.actual / maxScale) * 100 : 0;
+  const minPct = (row.min > 0 && maxScale > 0) ? (row.min / maxScale) * 100 : null;
+  const raPct  = (row.ra > 0 && maxScale > 0) ? (row.ra / maxScale) * 100 : null;
+  const ticks = [];
+  if (minPct !== null) ticks.push(`<div class="nrc-bar-tick" style="left: ${minPct}%;" title="Min"></div>`);
+  if (raPct !== null)  ticks.push(`<div class="nrc-bar-tick ra" style="left: ${raPct}%;"  title="RA"></div>`);
+  return `<tr>
+    <td>${row.name}</td>
+    <td class="numeric">${fmtNum(row.actual)} ${row.unit}</td>
+    <td class="numeric" style="color:var(--ink-muted);">${row.min === 0 ? '—' : fmtNum(row.min) + ' / ' + fmtNum(row.ra)}</td>
+    <td class="nrc-bar-cell">
+      <div class="nrc-bar-track">
+        <div class="nrc-bar-fill ${cls}" style="width: ${fillPct}%;"></div>
+        ${ticks.join('')}
+      </div>
+    </td>
+    <td><span class="nrc-status ${cls}">${nrcStatusLabel(cls)}</span></td>
+  </tr>`;
+}
+function renderNRC() {
+  const tbody = document.getElementById('nrc-tbody');
+  let html = `<tr>
+    <th>Nutrient</th>
+    <th class="numeric">In recipe</th>
+    <th class="numeric">Min / RA</th>
+    <th>Bar (Min · <strong>RA</strong>)</th>
+    <th>Status</th>
+  </tr>`;
+  NRC_DATA.forEach(group => {
+    html += `<tr class="group-row"><td colspan="5">${group.group}</td></tr>`;
+    group.rows.forEach(row => { html += renderNRCRow(row); });
+  });
+  tbody.innerHTML = html;
+}
+
+function renderInteractions() {
+  const host = document.getElementById('interaction-list');
+  host.innerHTML = INTERACTIONS.map(int => {
+    const numbersHtml = int.numbers.map(([k, v]) =>
+      `<span><strong>${v}</strong> ${k}</span>`
+    ).join(' · ');
+    return `<div class="interaction-card ${int.cls}">
+      <div class="interaction-title">${int.title}</div>
+      <div class="interaction-numbers">${numbersHtml}</div>
+      <div class="interaction-body">${int.body}</div>
+    </div>`;
+  }).join('');
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// Control wiring
+// ───────────────────────────────────────────────────────────────────────────
+function updateMeta() {
+  document.getElementById('ctrl-mult-meta').textContent =
+    `×${RECIPE_KCAL_BASE} = ${Math.round(state.mult * RECIPE_KCAL_BASE)} kcal/day`;
+  document.getElementById('ctrl-am-meta').textContent = `PM = ${100 - state.am}%`;
+  document.getElementById('ctrl-batch-meta').textContent = `${state.batch}-day batch`;
+}
+
+function syncControlsFromState() {
+  document.getElementById('ctrl-mult').value = state.mult;
+  document.getElementById('ctrl-am').value = state.am;
+  document.getElementById('ctrl-batch').value = state.batch;
+  document.querySelectorAll('#ctrl-form button').forEach(b => {
+    b.classList.toggle('active', b.dataset.form === state.form);
+  });
+}
+
+function renderAll() {
+  updateMeta();
+  renderIngredients();
+  renderBatchTracker();
+}
+
+function bindControls() {
+  document.getElementById('ctrl-mult').addEventListener('input', e => {
+    const v = parseFloat(e.target.value);
+    if (!isNaN(v) && v > 0) { state.mult = v; renderAll(); scheduleSave(); }
+  });
+  document.getElementById('ctrl-am').addEventListener('input', e => {
+    let v = parseFloat(e.target.value);
+    if (isNaN(v)) return;
+    v = Math.max(0, Math.min(100, v));
+    state.am = v; renderAll(); scheduleSave();
+  });
+  document.getElementById('ctrl-batch').addEventListener('input', e => {
+    const v = parseInt(e.target.value);
+    if (!isNaN(v) && v > 0) { state.batch = v; renderAll(); scheduleSave(); }
+  });
+  document.querySelectorAll('#ctrl-form button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#ctrl-form button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      state.form = btn.dataset.form;
+      renderAll();
+      scheduleSave();
+    });
+  });
+}
+
+function resetControls() {
+  Object.assign(state, DEFAULTS);
+  syncControlsFromState();
+  renderAll();
+  scheduleSave();
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// Init
+// ───────────────────────────────────────────────────────────────────────────
+async function init() {
+  bindControls();
+  renderNRC();
+  renderInteractions();
+
+  // First, render with defaults so the page isn't blank
+  syncControlsFromState();
+  renderAll();
+
+  // Then fetch from sheet (or fall back to localStorage)
+  await fetchState();
+  syncControlsFromState();
+  renderAll();
+}
+init();
+</script>
+</body>
+</html>
