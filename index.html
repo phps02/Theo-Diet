@@ -311,6 +311,35 @@
   details.advanced[open] summary { margin-bottom: 12px; }
   details.advanced .small-note { font-size: 12px; color: var(--ink-muted); margin-top: 8px; line-height: 1.5; }
 
+  /* Substitution guideline tables */
+  .sub-groups { margin-top: 14px; display: grid; gap: 18px; }
+  .sub-group {
+    background: var(--bg-warm); border: 1px solid var(--line-soft);
+    border-radius: 6px; padding: 12px 16px;
+  }
+  .sub-group-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--moss); margin-bottom: 8px; font-weight: 500;
+  }
+  .sub-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .sub-table td {
+    padding: 6px 8px; vertical-align: top;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .sub-table tr:last-child td { border-bottom: none; }
+  .sub-from { color: var(--ink); font-weight: 500; width: 36%; }
+  .sub-arrow {
+    width: 24px; text-align: center; color: var(--accent);
+    font-family: 'JetBrains Mono', monospace; font-weight: 500;
+  }
+  .sub-to { color: var(--ink-soft); }
+  .sub-note { color: var(--ink-muted); font-style: italic; font-size: 11px; }
+  @media (max-width: 640px) {
+    .sub-from { width: 42%; font-size: 11px; }
+    .sub-table td { padding: 5px 4px; }
+  }
+
   .reset-btn {
     background: var(--paper); border: 1px solid var(--line); color: var(--ink-muted);
     padding: 6px 12px; border-radius: 14px;
@@ -319,6 +348,9 @@
     transition: all 0.15s;
   }
   .reset-btn:hover { background: var(--bg-warm); color: var(--ink); }
+
+  /* Extras card */
+...
 </style>
 </head>
 <body>
@@ -331,6 +363,111 @@
   <h1 class="hero-title">Theo's <em>raw recipe</em></h1>
   <p class="hero-sub">Formulated by Ronny LeJeune (Perfectly Rawsome) on October 25, 2024 for 1850 kcal/day at 85 lb ideal weight. Settings and batch dates sync to Google Sheet across devices.</p>
 </header>
+
+<section class="section">
+  <details class="panel extras">
+    <summary>
+      <span class="extras-badge">+</span>
+      <span class="extras-summary-text">
+        <span class="extras-summary-title">Extras &mdash; off-recipe additions</span>
+        <span class="extras-summary-meta">5 items &middot; ~731 kcal/day &middot; not in NRC analysis</span>
+      </span>
+    </summary>
+
+    <div class="extras-body">
+      <div class="panel-sub">Items fed alongside the formulated raw recipe but not part of it.</div>
+
+      <div class="extras-disclaimer">
+        <strong>Note:</strong> The NRC 2006 compliance analysis below applies only to the formulated recipe at 1850&nbsp;kcal/day. The items in this card are not included in that analysis. Calorie estimates are sourced from manufacturer guaranteed-analysis labels or USDA reference values and shown for tracking purposes only &mdash; they do not feed into the recipe multiplier or batch calculator.
+      </div>
+
+      <table class="extras-table">
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>Amount</th>
+            <th class="numeric">Per&nbsp;unit</th>
+            <th class="numeric">Daily&nbsp;kcal</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              <span class="extras-name">Green Juju Just Greens with Nettles</span>
+              <span class="extras-note">Freeze-dried; rehydrate 1:1 with water. Stinging nettle relevant to neuroinflammation; intended for intermittent/supplemental feeding only per manufacturer.</span>
+              <span class="extras-frequency">Daily</span>
+            </td>
+            <td>2/3&nbsp;cup<br><span style="font-size:11px;color:var(--ink-muted)">(~10.7&nbsp;tbsp)</span></td>
+            <td class="numeric">54&nbsp;kcal/tbsp</td>
+            <td class="numeric">~576</td>
+          </tr>
+          <tr>
+            <td>
+              <span class="extras-name">Pastured organic chicken egg</span>
+              <span class="extras-note">Whole, raw. Choline + biotin source.</span>
+              <span class="extras-frequency">Daily</span>
+            </td>
+            <td>1 large<br><span style="font-size:11px;color:var(--ink-muted)">(~50&nbsp;g)</span></td>
+            <td class="numeric">~72&nbsp;kcal</td>
+            <td class="numeric">~72</td>
+          </tr>
+          <tr>
+            <td>
+              <span class="extras-name">BJ&rsquo;s Raw fish broth</span>
+              <span class="extras-note">Wild-caught fish stock. Omega-3 + collagen support.</span>
+              <span class="extras-frequency">Daily</span>
+            </td>
+            <td>2&nbsp;oz</td>
+            <td class="numeric">7.4&nbsp;kcal/oz</td>
+            <td class="numeric">~15</td>
+          </tr>
+          <tr>
+            <td>
+              <span class="extras-name">Bison bone broth (homemade, plain)</span>
+              <span class="extras-note">Skimmed, no aromatics. Amount and density vary by batch &mdash; estimate range.</span>
+              <span class="extras-frequency">Daily</span>
+            </td>
+            <td>1&nbsp;oz</td>
+            <td class="numeric">~5&ndash;15&nbsp;kcal/oz</td>
+            <td class="numeric">~5&ndash;15</td>
+          </tr>
+          <tr>
+            <td>
+              <span class="extras-name">Fresh Is Best freeze-dried duck feet</span>
+              <span class="extras-note">Cartilage/glucosamine. Feed under supervision per manufacturer due to choking risk.</span>
+              <span class="extras-frequency">Daily</span>
+            </td>
+            <td>1 piece</td>
+            <td class="numeric">~58&nbsp;kcal/piece</td>
+            <td class="numeric">~58</td>
+          </tr>
+          <tr class="totals">
+            <td colspan="3">Daily extras total</td>
+            <td class="numeric">~726&ndash;736</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="extras-stats">
+        <div class="extras-stat">
+          <div class="extras-stat-label">Recipe baseline</div>
+          <div class="extras-stat-value">1,850</div>
+          <div class="extras-stat-meta">kcal/day &middot; NRC-balanced</div>
+        </div>
+        <div class="extras-stat">
+          <div class="extras-stat-label">Extras estimate</div>
+          <div class="extras-stat-value">~731</div>
+          <div class="extras-stat-meta">kcal/day &middot; not in NRC analysis</div>
+        </div>
+        <div class="extras-stat">
+          <div class="extras-stat-label">Combined total</div>
+          <div class="extras-stat-value">~2,581</div>
+          <div class="extras-stat-meta">kcal/day &middot; ~40% above baseline</div>
+        </div>
+      </div>
+    </div>
+  </details>
+</section>
 
 <section class="controls">
   <div class="ctrl-card">
@@ -414,7 +551,118 @@
   <details class="advanced">
     <summary>Substitution guideline</summary>
     <p class="small-note">Perfectly Rawsome provides a substitution guideline for situations where sourcing specific ingredients becomes unpredictable. The guideline preserves nutritional balance for routine swaps; outside-guideline substitutions require a paid recipe reformulation ($34.67 per 3-change adjustment as of the 2024 quote).</p>
-    <p class="small-note" style="margin-top: 8px;"><em>Add the link or paste the guidance here when you have it on hand.</em></p>
+    <p class="small-note" style="margin-top: 8px;">Most ingredient substitutions affect the balance of an NRC recipe. The swaps below preserve nutritional balance for routine sourcing changes. Some pairs are interchangeable (work both ways); others only work one direction &mdash; both rows are listed where applicable. Symbols: <strong>→</strong> swap to, <strong>=</strong> equivalent category.</p>
+
+    <div class="sub-groups">
+
+      <div class="sub-group">
+        <div class="sub-group-title">Muscle Meat</div>
+        <table class="sub-table">
+          <tbody>
+            <tr><td class="sub-from">Chicken Breast, boneless, skinless</td><td class="sub-arrow">→</td><td class="sub-to">Turkey Breast, boneless, skinless</td></tr>
+            <tr><td class="sub-from">Chicken Thigh, boneless, skinless</td><td class="sub-arrow">→</td><td class="sub-to">Turkey Thighs, boneless skinless</td></tr>
+            <tr><td class="sub-from">Pork Shoulder, w/ fat</td><td class="sub-arrow">→</td><td class="sub-to">Lamb Shoulder, with fat</td></tr>
+            <tr><td class="sub-from">Pork Loin, w/ fat</td><td class="sub-arrow">→</td><td class="sub-to">Lamb Loin, with fat</td></tr>
+            <tr><td class="sub-from">Ground Beef 80/20</td><td class="sub-arrow">→</td><td class="sub-to">Pork 80/20; Lamb 80/20; or Turkey 80/20</td></tr>
+            <tr><td class="sub-from">Beef Round, lean</td><td class="sub-arrow">→</td><td class="sub-to">Pork Loin, lean only; Bison, lean only; or Venison, lean only</td></tr>
+            <tr><td class="sub-from">Lamb Shoulder, boneless, with fat</td><td class="sub-arrow">→</td><td class="sub-to">Pork Shoulder, boneless, with fat</td></tr>
+            <tr><td class="sub-from">Venison, lean only</td><td class="sub-arrow">→</td><td class="sub-to">Bison, lean only; or Beef, lean only</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="sub-group">
+        <div class="sub-group-title">Raw Meaty Bone</div>
+        <table class="sub-table">
+          <tbody>
+            <tr><td class="sub-from">Chicken Leg Quarter, bone-in, w/ skin</td><td class="sub-arrow">→</td><td class="sub-to">Chicken Thigh, bone-in, w/ skin</td></tr>
+            <tr><td class="sub-from">Chicken Wings</td><td class="sub-arrow">→</td><td class="sub-to">Duck Wings; Turkey Wings (wing tip and flat only)</td></tr>
+            <tr><td class="sub-from">Chicken Feet</td><td class="sub-arrow">→</td><td class="sub-to">Chicken Ribcage/Carcass; Duck Frame/Carcass; Duck Feet; or other poultry feet</td></tr>
+            <tr><td class="sub-from">Turkey Neck</td><td class="sub-arrow">→</td><td class="sub-to">Duck Neck; Goose Neck; or Duck Head</td></tr>
+            <tr><td class="sub-from">Chicken Neck</td><td class="sub-arrow">→</td><td class="sub-to">Duck Neck; Pheasant Neck; or Chicken Head</td></tr>
+            <tr><td class="sub-from">Duck Heads</td><td class="sub-arrow">→</td><td class="sub-to">Chicken Head; Duck Neck; or Turkey Neck</td></tr>
+            <tr><td class="sub-from">Pork Ribs</td><td class="sub-arrow">→</td><td class="sub-to">Lamb Ribs</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="sub-group">
+        <div class="sub-group-title">Muscular Organ</div>
+        <table class="sub-table">
+          <tbody>
+            <tr><td class="sub-from">Beef Heart</td><td class="sub-arrow">→</td><td class="sub-to">Bison Heart; Pork Heart; Lamb Heart; or Goat Heart</td></tr>
+            <tr><td class="sub-from">Chicken Heart</td><td class="sub-arrow">→</td><td class="sub-to">Turkey Heart; Duck Heart; or Rabbit Heart</td></tr>
+            <tr><td class="sub-from">Pork Heart</td><td class="sub-arrow">→</td><td class="sub-to">Lamb Heart; or Veal Heart</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="sub-group">
+        <div class="sub-group-title">Liver</div>
+        <table class="sub-table">
+          <tbody>
+            <tr><td class="sub-from">Beef Liver</td><td class="sub-arrow">→</td><td class="sub-to">Bison Liver; Lamb Liver; Goat Liver; or Venison Liver</td></tr>
+            <tr><td class="sub-from">Chicken Liver</td><td class="sub-arrow">→</td><td class="sub-to">Turkey Liver; Pork Liver; or Rabbit Liver</td></tr>
+            <tr><td class="sub-from">Duck Liver</td><td class="sub-arrow">→</td><td class="sub-to">Goose Liver</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="sub-group">
+        <div class="sub-group-title">Other Organ</div>
+        <table class="sub-table">
+          <tbody>
+            <tr><td class="sub-from">Beef Kidney</td><td class="sub-arrow">→</td><td class="sub-to">Bison Kidney; Pork Kidney; Lamb Kidney; or Goat Kidney</td></tr>
+            <tr><td class="sub-from">Beef Spleen</td><td class="sub-arrow">→</td><td class="sub-to">Bison Spleen; Lamb Spleen; Pork Spleen; or Goat Spleen</td></tr>
+            <tr><td class="sub-from">Beef Pancreas</td><td class="sub-arrow">→</td><td class="sub-to">Bison Pancreas; Pork Pancreas; Lamb Pancreas; or Goat Pancreas</td></tr>
+            <tr><td class="sub-from">Beef Testicles</td><td class="sub-arrow">→</td><td class="sub-to">Bison Testicles; Pork Testicles; Lamb Testicles; or Goat Testicles</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="sub-group">
+        <div class="sub-group-title">Seafood</div>
+        <table class="sub-table">
+          <tbody>
+            <tr><td class="sub-from">Salmon</td><td class="sub-arrow">↔</td><td class="sub-to">Mackerel <span class="sub-note">(interchangeable)</span></td></tr>
+            <tr><td class="sub-from">Sardines</td><td class="sub-arrow">→</td><td class="sub-to">Herring; Salmon; or Mackerel</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="sub-group">
+        <div class="sub-group-title">Produce &middot; Low Glycemic</div>
+        <table class="sub-table">
+          <tbody>
+            <tr><td class="sub-from">Spinach</td><td class="sub-arrow">→</td><td class="sub-to">Kale; Mustard Greens; Beet Greens; or Collard Greens</td></tr>
+            <tr><td class="sub-from">Broccoli</td><td class="sub-arrow">→</td><td class="sub-to">Green Beans; Zucchini; Asparagus; or Cauliflower</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="sub-group">
+        <div class="sub-group-title">Produce &middot; Starch &amp; Grain</div>
+        <table class="sub-table">
+          <tbody>
+            <tr><td class="sub-from">Butternut Squash <span class="sub-note">(moderate starch)</span></td><td class="sub-arrow">→</td><td class="sub-to">Beetroot; Carrots; Pumpkin; or Acorn Squash</td></tr>
+            <tr><td class="sub-from">Sweet Potato <span class="sub-note">(high starch, GF)</span></td><td class="sub-arrow">→</td><td class="sub-to">Parsnips; or White Potato</td></tr>
+            <tr><td class="sub-from">Oats <span class="sub-note">(gluten-free grain)</span></td><td class="sub-arrow">→</td><td class="sub-to">Quinoa; Rice; Millet; Sorghum; or Amaranth</td></tr>
+            <tr><td class="sub-from">Rice <span class="sub-note">(gluten-inclusive)</span></td><td class="sub-arrow">→</td><td class="sub-to">Pearled Barley; Bulgar Wheat; or Farro</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="sub-group">
+        <div class="sub-group-title">Seeds</div>
+        <table class="sub-table">
+          <tbody>
+            <tr><td class="sub-from">Flaxseed Oil</td><td class="sub-arrow">→</td><td class="sub-to">Ground Flaxseeds; or Ground Chia Seeds</td></tr>
+            <tr><td class="sub-from">Hempseed Oil</td><td class="sub-arrow">→</td><td class="sub-to">Ground Hempseeds</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
   </details>
 </section>
 
