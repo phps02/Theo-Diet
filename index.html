@@ -71,6 +71,40 @@
   .sync-pill.error  { color: var(--bad);  border-color: var(--bad); }
   .sync-pill.offline{ color: var(--bad);  border-color: var(--bad); }
 
+  .lock-pill {
+    position: fixed; top: 12px; left: 12px; z-index: 9999;
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px; background: var(--paper);
+    border: 1px solid var(--line); border-radius: 14px;
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    cursor: pointer; user-select: none;
+    transition: all 0.15s;
+  }
+  .lock-pill.locked   { color: var(--ink-muted); }
+  .lock-pill.unlocked { color: var(--good); border-color: var(--good); background: var(--good-bg); }
+  .lock-pill:hover    { border-color: var(--accent); color: var(--accent); }
+  /* When unlocked, sync-pill needs to move right to avoid overlap */
+  body.is-unlocked .sync-pill { left: 168px; }
+  body:not(.is-unlocked) #sync-pill { display: none; }
+
+  /* Read-only visual treatment */
+  body:not(.is-unlocked) .ctrl-input,
+  body:not(.is-unlocked) .ctrl-toggle,
+  body:not(.is-unlocked) .reset-btn {
+    opacity: 0.55;
+    pointer-events: none;
+    cursor: not-allowed;
+  }
+  body:not(.is-unlocked) .batch-actions { display: none; }
+  body:not(.is-unlocked) .batch-locked-note {
+    display: block; font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    letter-spacing: 0.08em; color: var(--ink-muted); text-transform: uppercase;
+    margin-top: 12px; padding: 8px 12px; background: var(--bg-warm);
+    border-left: 3px solid var(--ink-muted); border-radius: 4px;
+  }
+  body.is-unlocked .batch-locked-note { display: none; }
+
   .hero { max-width: 1300px; margin: 0 auto; padding: 32px 32px 16px; }
   .hero-eyebrow { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.25em; color: var(--ink-muted); text-transform: uppercase; margin-bottom: 6px; }
   .hero-title { font-family: 'Fraunces', serif; font-size: clamp(26px, 4vw, 38px); font-weight: 600; line-height: 1.1; letter-spacing: -0.02em; margin-bottom: 8px; }
@@ -350,12 +384,179 @@
   .reset-btn:hover { background: var(--bg-warm); color: var(--ink); }
 
   /* Extras card */
-...
+block) ═══════════════════ -->
+
+<style>
+/* Extras card — off-recipe items, not in NRC analysis. Collapsible. */
+.panel.extras {
+  padding: 0;
+  border-left: 4px solid var(--plum);
+  background: linear-gradient(to right, rgba(107, 45, 74, 0.04), var(--paper) 40%);
+  overflow: hidden;
+}
+.panel.extras > summary {
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+  padding: 18px 24px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  transition: background 0.15s;
+}
+.panel.extras > summary:hover { background: rgba(107, 45, 74, 0.04); }
+.panel.extras > summary::-webkit-details-marker { display: none; }
+.panel.extras > summary::after {
+  content: '▸';
+  margin-left: auto;
+  color: var(--plum);
+  font-size: 14px;
+  transition: transform 0.2s;
+}
+.panel.extras[open] > summary::after { transform: rotate(90deg); }
+.extras-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px; height: 26px;
+  background: var(--plum); color: var(--paper);
+  border-radius: 50%;
+  font-family: 'Inter', sans-serif;
+  font-size: 16px; font-weight: 600;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.extras-summary-text { flex: 1; min-width: 0; }
+.extras-summary-title {
+  font-family: 'Fraunces', serif;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--plum);
+  line-height: 1.2;
+}
+.extras-summary-meta {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--ink-muted);
+  text-transform: uppercase;
+  margin-top: 4px;
+  display: block;
+}
+.extras-body { padding: 0 24px 24px; }
+.panel.extras .panel-sub { margin-bottom: 14px; padding-top: 4px; }
+
+.extras-disclaimer {
+  background: rgba(107, 45, 74, 0.06);
+  border: 1px solid rgba(107, 45, 74, 0.2);
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-size: 12px; line-height: 1.5;
+  color: var(--ink-soft);
+  margin-bottom: 16px;
+}
+.extras-disclaimer strong { color: var(--plum); }
+.extras-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.extras-table th {
+  text-align: left;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: var(--ink-muted);
+  text-transform: uppercase;
+  font-weight: 500;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+}
+.extras-table th.numeric { text-align: right; }
+.extras-table td {
+  padding: 10px;
+  border-bottom: 1px solid var(--line-soft);
+  vertical-align: top;
+}
+.extras-table td.numeric {
+  text-align: right;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.extras-table tr:last-child td { border-bottom: none; }
+.extras-table tr.totals td {
+  border-top: 2px solid var(--plum);
+  border-bottom: none;
+  padding-top: 12px;
+  font-weight: 600;
+}
+.extras-table tr.totals td.numeric { color: var(--plum); }
+.extras-name { color: var(--ink); font-weight: 500; }
+.extras-note {
+  display: block;
+  color: var(--ink-muted);
+  font-size: 11px;
+  font-style: italic;
+  margin-top: 2px;
+  line-height: 1.4;
+}
+.extras-frequency {
+  display: inline-block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: var(--bg-warm);
+  color: var(--ink-muted);
+  padding: 2px 7px;
+  border-radius: 8px;
+  margin-top: 4px;
+}
+.extras-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+.extras-stat {
+  background: var(--bg-warm);
+  border-left: 3px solid var(--plum);
+  border-radius: 4px;
+  padding: 10px 14px;
+}
+.extras-stat-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: var(--ink-muted);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.extras-stat-value {
+  font-family: 'Fraunces', serif;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.1;
+}
+.extras-stat-meta {
+  font-size: 11px;
+  color: var(--ink-muted);
+  margin-top: 2px;
+}
+@media (max-width: 640px) {
+  .extras-table th:nth-child(3),
+  .extras-table td:nth-child(3) { display: none; }
+  .panel.extras > summary { padding: 14px 18px; gap: 10px; }
+  .extras-body { padding: 0 18px 18px; }
+}
 </style>
 </head>
 <body>
 
 <a href="https://phps02.github.io/Theo-Care-Hub/" class="care-hub-back">← Care Hub</a>
+<span class="lock-pill locked" id="lock-pill" onclick="toggleLock()" title="Click to unlock editing">🔒 View only</span>
 <span class="sync-pill" id="sync-pill">⟳ Loading…</span>
 
 <header class="hero">
@@ -682,6 +883,48 @@
 const SHEET_API = 'https://script.google.com/macros/s/AKfycbzSnTKRMgsetCnyMIVKbV_MdKkHTKn6P1ogaAamoqzAzfK21mlUrLMdIIFZWLjC9xtLaw/exec';
 const LS_KEY = 'theo_diet_state_v1';
 
+// ───────────────────────────────────────────────────────────────────────────
+// EDIT LOCK — UI gate matching seizure-tracker pattern.
+// Client-side only; protects against accidental clicks when the page is shared.
+// Not real auth — anyone with browser dev tools can bypass.
+// ───────────────────────────────────────────────────────────────────────────
+const LOCK_PASSWORD = 'theo2026';
+const LOCK_LS_KEY = 'theo_diet_unlocked_v1';
+
+function isUnlocked() {
+  return localStorage.getItem(LOCK_LS_KEY) === '1';
+}
+function setUnlocked(yes) {
+  if (yes) localStorage.setItem(LOCK_LS_KEY, '1');
+  else localStorage.removeItem(LOCK_LS_KEY);
+  applyLockState();
+  // Re-render the batch tracker so the action row appears/disappears
+  if (typeof renderBatchTracker === 'function') renderBatchTracker();
+}
+function applyLockState() {
+  const unlocked = isUnlocked();
+  document.body.classList.toggle('is-unlocked', unlocked);
+  const pill = document.getElementById('lock-pill');
+  if (pill) {
+    pill.className = 'lock-pill ' + (unlocked ? 'unlocked' : 'locked');
+    pill.textContent = unlocked ? '🔓 Edit mode' : '🔒 View only';
+    pill.title = unlocked ? 'Click to lock (read-only)' : 'Click to unlock editing';
+  }
+}
+function toggleLock() {
+  if (isUnlocked()) {
+    setUnlocked(false);
+    return;
+  }
+  const pwd = prompt('Enter password to enable editing:');
+  if (pwd === null) return; // cancelled
+  if (pwd === LOCK_PASSWORD) {
+    setUnlocked(true);
+  } else {
+    alert('Incorrect password.');
+  }
+}
+
 // Defaults baked in for first-load before sheet is wired
 const DEFAULTS = {
   mult: 1.0,
@@ -895,6 +1138,7 @@ async function fetchState() {
 
 let saveTimeout = null;
 function scheduleSave() {
+  if (!isUnlocked()) return; // read-only mode: no writes
   if (saveTimeout) clearTimeout(saveTimeout);
   saveTimeout = setTimeout(saveState, 500);
 }
@@ -1058,6 +1302,7 @@ function renderBatchTracker() {
         <button class="btn" onclick="recordBatchToday()">📋 Record batch as today</button>
         <input type="date" class="batch-date-input" id="batch-date-input" value="${todayISO()}" onchange="recordBatchOnDate(this.value)">
       </div>
+      <div class="batch-locked-note">🔒 View-only mode &middot; unlock to record batches</div>
     `;
     return;
   }
@@ -1106,15 +1351,18 @@ function renderBatchTracker() {
       <span style="color:var(--ink-muted);font-family:'JetBrains Mono',monospace;font-size:10px;">or set date:</span>
       <input type="date" class="batch-date-input" id="batch-date-input" value="${state.lastBatchDate}" onchange="recordBatchOnDate(this.value)">
     </div>
+    <div class="batch-locked-note">🔒 View-only mode &middot; unlock to record batches</div>
   `;
 }
 
 function recordBatchToday() {
+  if (!isUnlocked()) return;
   state.lastBatchDate = todayISO();
   renderBatchTracker();
   scheduleSave();
 }
 function recordBatchOnDate(iso) {
+  if (!isUnlocked()) return;
   if (!iso) return;
   state.lastBatchDate = iso;
   renderBatchTracker();
@@ -1261,6 +1509,7 @@ function resetControls() {
 // Init
 // ───────────────────────────────────────────────────────────────────────────
 async function init() {
+  applyLockState();
   bindControls();
   renderNRC();
   renderInteractions();
