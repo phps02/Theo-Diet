@@ -345,6 +345,54 @@
   details.advanced[open] summary { margin-bottom: 12px; }
   details.advanced .small-note { font-size: 12px; color: var(--ink-muted); margin-top: 8px; line-height: 1.5; }
 
+  /* Reference tables inside collapsibles (BBB + glutamate) */
+  .ref-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px; }
+  .ref-table thead th {
+    background: var(--line-soft);
+    text-align: left;
+    padding: 7px 9px;
+    font-weight: 600;
+    color: var(--ink);
+    border-bottom: 1px solid var(--line);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .ref-table tbody td {
+    padding: 7px 9px;
+    border-bottom: 1px solid var(--line-soft);
+    color: var(--ink-soft);
+    vertical-align: top;
+    line-height: 1.45;
+  }
+  .ref-table tbody tr:last-child td { border-bottom: none; }
+  .ref-table tbody tr.crit td:first-child { color: var(--bad); font-weight: 600; }
+  .ref-table tbody tr.high td:first-child { color: var(--warn); font-weight: 600; }
+  .ref-table tbody tr.opt  td:first-child { color: var(--info); font-weight: 600; }
+  .ref-table tbody tr.ok   td:first-child { color: var(--good); font-weight: 600; }
+  .ref-table tbody tr.hold td:first-child { color: var(--ink-muted); font-weight: 600; }
+  .ref-table tbody tr.ok td { color: var(--ink-muted); }
+  .ref-table tbody tr.hold td { color: var(--ink-muted); }
+  .ref-table-wrap { overflow-x: auto; margin-top: 8px; }
+  .ref-note { font-size: 11px; color: var(--ink-muted); margin-top: 10px; line-height: 1.5; font-style: italic; }
+  .ref-legend {
+    display: flex; flex-wrap: wrap; gap: 14px;
+    padding: 10px 12px; margin-top: 10px;
+    background: var(--line-soft); border-radius: 6px;
+    font-size: 11px; color: var(--ink-soft); line-height: 1.5;
+  }
+  .ref-legend-item { display: inline-flex; align-items: center; gap: 6px; }
+  .ref-legend-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+  .ref-legend-dot.crit { background: var(--bad); }
+  .ref-legend-dot.high { background: var(--warn); }
+  .ref-legend-dot.opt  { background: var(--info); }
+  .ref-legend-dot.ok   { background: var(--good); }
+  .ref-legend-dot.hold { background: var(--ink-muted); }
+  @media (max-width: 720px) {
+    .ref-table { font-size: 11px; }
+    .ref-table thead th, .ref-table tbody td { padding: 5px 7px; }
+  }
+
   /* Substitution guideline tables */
   .sub-groups { margin-top: 14px; display: grid; gap: 18px; }
   .sub-group {
@@ -445,6 +493,64 @@ block) ═══════════════════ -->
 }
 .extras-body { padding: 0 24px 24px; }
 .panel.extras .panel-sub { margin-bottom: 14px; padding-top: 4px; }
+
+.panel.nrc-collapsible {
+  padding: 0;
+  border-left: 4px solid var(--moss);
+  background: linear-gradient(to right, rgba(74, 103, 65, 0.04), var(--paper) 40%);
+  overflow: hidden;
+}
+.panel.nrc-collapsible > summary {
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+  padding: 18px 24px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  transition: background 0.15s;
+}
+.panel.nrc-collapsible > summary:hover { background: rgba(74, 103, 65, 0.04); }
+.panel.nrc-collapsible > summary::-webkit-details-marker { display: none; }
+.panel.nrc-collapsible > summary::after {
+  content: '▸';
+  margin-left: auto;
+  color: var(--moss);
+  font-size: 14px;
+  transition: transform 0.2s;
+}
+.panel.nrc-collapsible[open] > summary::after { transform: rotate(90deg); }
+.nrc-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px; height: 26px;
+  background: var(--moss); color: var(--paper);
+  border-radius: 50%;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px; font-weight: 600;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.nrc-summary-text { flex: 1; min-width: 0; }
+.nrc-summary-title {
+  font-family: 'Fraunces', serif;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--moss);
+  line-height: 1.2;
+}
+.nrc-summary-meta {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--ink-muted);
+  text-transform: uppercase;
+  margin-top: 4px;
+  display: block;
+}
+.nrc-body { padding: 0 24px 24px; }
+.panel.nrc-collapsible .panel-sub { margin-bottom: 14px; padding-top: 4px; }
 
 .extras-disclaimer {
   background: rgba(107, 45, 74, 0.06);
@@ -550,6 +656,8 @@ block) ═══════════════════ -->
   .extras-table td:nth-child(3) { display: none; }
   .panel.extras > summary { padding: 14px 18px; gap: 10px; }
   .extras-body { padding: 0 18px 18px; }
+  .panel.nrc-collapsible > summary { padding: 14px 18px; gap: 10px; }
+  .nrc-body { padding: 0 18px 18px; }
 }
 </style>
 </head>
@@ -740,14 +848,24 @@ block) ═══════════════════ -->
 </section>
 
 <section class="section">
-  <div class="panel">
-    <div class="panel-title">NRC 2006 compliance</div>
-    <div class="panel-sub">Each nutrient compared against Minimum Requirement and Recommended Allowance. Status reflects how the recipe meets canine adult-maintenance targets at <strong>1850 kcal/day</strong>. Values do not change with the multiplier — nutrient density per kcal is constant.</div>
-    <table class="nrc-table" id="nrc-table"><tbody id="nrc-tbody"></tbody></table>
-    <div style="margin-top: 14px; font-size: 12px; color: var(--ink-muted); line-height: 1.5;">
-      <strong style="color: var(--ink);">Choline note from formulator:</strong> USDA's nutritional database is incomplete for choline. Choline is abundant in raw meats and organs, and dogs synthesize choline endogenously when on high-protein diets. The lower number shown here does not warrant supplementation.
+  <details class="panel nrc-collapsible">
+    <summary>
+      <span class="nrc-badge">✓</span>
+      <span class="nrc-summary-text">
+        <span class="nrc-summary-title">NRC 2006 compliance</span>
+        <span class="nrc-summary-meta">Adult maintenance &middot; 1850 kcal/day &middot; nutrient-by-nutrient analysis</span>
+      </span>
+    </summary>
+
+    <div class="nrc-body">
+      <div class="panel-sub" style="margin-bottom: 12px;">Each nutrient compared against Minimum Requirement and Recommended Allowance. Status reflects how the recipe meets canine adult-maintenance targets at <strong>1850 kcal/day</strong>. Values do not change with the multiplier — nutrient density per kcal is constant.</div>
+      <table class="nrc-table" id="nrc-table"><tbody id="nrc-tbody"></tbody></table>
+      <details class="advanced" style="margin-top: 14px;">
+        <summary>Choline note from formulator</summary>
+        <p class="small-note">USDA's nutritional database is incomplete for choline. Choline is abundant in raw meats and organs, and dogs synthesize choline endogenously when on high-protein diets. The lower number shown here does not warrant supplementation.</p>
+      </details>
     </div>
-  </div>
+  </details>
 </section>
 
 <section class="section">
@@ -756,6 +874,89 @@ block) ═══════════════════ -->
     <div class="panel-sub">Where the recipe overlaps with Theo's active supplement protocol. Pulled from the protocol documented in the seizure tracker — review when supplements are added or removed.</div>
     <div id="interaction-list"></div>
   </div>
+</section>
+
+<section class="section">
+  <details class="advanced">
+    <summary>Free glutamate analysis · per recipe</summary>
+    <p class="small-note">Total + free glutamate by ingredient, calculated against the recipe at 1850 kcal/day plus the daily extras. Reference for the gut–brain axis / BBB conversation — the recipe is not high-Glu.</p>
+
+    <div class="ref-table-wrap">
+      <table class="ref-table">
+        <thead>
+          <tr>
+            <th style="width: 30%;">Source</th>
+            <th style="width: 16%; text-align: right;">Total Glu</th>
+            <th style="width: 16%; text-align: right;">Free Glu</th>
+            <th style="width: 38%;">Note</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><strong style="color: var(--ink);">Recipe base (duck + fish, 1850 kcal)</strong></td><td style="text-align: right;">~26,400 mg</td><td style="text-align: right;">~330 mg</td><td>Fresh raw meat is low in free Glu (beef/pork ~10 mg/100g, chicken ~20–50, fresh sardine ~10–20)</td></tr>
+          <tr><td>Green Juju FD (⅔ cup ≈ 29 g)</td><td style="text-align: right;">~640 mg</td><td style="text-align: right;">~90 mg</td><td>Estimated from leafy-green family proxies (~30 mg/100g fresh-equivalent across blend)</td></tr>
+          <tr><td>Pastured egg (1 large)</td><td style="text-align: right;">~1,650 mg</td><td style="text-align: right;">~25 mg</td><td>Standard reference (egg = 23 mg/100g free)</td></tr>
+          <tr><td>BJ's fish meat stock (2 oz)</td><td style="text-align: right;">~250 mg</td><td style="text-align: right;">~45 mg</td><td>Light extraction; collagen-rich, low free</td></tr>
+          <tr><td>Bison bone broth (1 oz, 4-hr simmer)</td><td style="text-align: right;">~310 mg</td><td style="text-align: right;">~80 mg</td><td>Covance lab interpolation for 4-hr cook time</td></tr>
+          <tr><td>FD duck feet (1 pc)</td><td style="text-align: right;">~480 mg</td><td style="text-align: right;">~20 mg</td><td>Collagen-heavy, low free</td></tr>
+          <tr><td>FD half duck neck</td><td style="text-align: right;">~430 mg</td><td style="text-align: right;">~38 mg</td><td>Bone-in poultry, moderate free</td></tr>
+          <tr style="background: var(--line-soft);"><td><strong style="color: var(--ink);">Combined daily total</strong></td><td style="text-align: right;"><strong style="color: var(--ink);">~30,160 mg</strong></td><td style="text-align: right;"><strong style="color: var(--ink);">~628 mg</strong></td><td><strong style="color: var(--ink);">~2.1% free</strong> — comparable to one bowl miso soup</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <details class="advanced" style="margin-top: 14px;">
+      <summary>Methodology + sources</summary>
+      <p class="small-note"><strong style="color: var(--ink);">Free Glu</strong> values from the Ninomiya/Yamaguchi tables (umamiinfo.com) and the Ajinomoto Umami Database — direct measurements where available (egg, fish, meat, broth-equivalents). Green Juju is estimated from leafy-green proxies because no direct measurement exists: spinach 48, cabbage 50, broccoli 30, cauliflower 46 mg free Glu per 100g; blend midpoint ~30 mg/100g fresh-equivalent applied to ~300 g fresh-equivalent dry matter (29 g freeze-dried at 12.7% moisture × dehydration ratio derived from 91.8% moisture in original frozen).</p>
+      <p class="small-note" style="margin-top: 6px;"><strong style="color: var(--ink);">Total Glu</strong> values from USDA FoodData Central protein amino-acid composition. Meat baseline uses standard ~15% of total protein as glutamate. Honest uncertainty: ingredient-level free Glu estimates carry ±30–50% error for plant proxies, ±10% for direct measurements. The order-of-magnitude conclusion (~2% free, miso-soup-equivalent) is robust to that uncertainty.</p>
+    </details>
+
+    <p class="ref-note">Brain glutamate dysregulation in epilepsy is well-established (NMDA/AMPA pathways). Dietary Glu impact is contested: Holton 2023 pilot RCT showed no population-level seizure reduction with low-Glu diet (21% responder rate). No canine dietary-Glu trials exist. Ketogenic / MCT remains the evidence-based dietary intervention for canine epilepsy. <strong style="color: var(--ink);">Theo's recipe does not warrant a Glu-restrictive change.</strong></p>
+  </details>
+</section>
+
+<section class="section">
+  <details class="advanced">
+    <summary>BBB protection · intervention reference</summary>
+    <p class="small-note">Targeted blood–brain barrier protection plan derived from Theo's Jan 2026 Animabiome retest. Sorted by criticality. Spacing rules in timing column. <strong style="color: var(--ink);">Confirm any addition with Dr. Gaston / Dr. Rauf before starting.</strong></p>
+
+    <div class="ref-legend">
+      <span class="ref-legend-item"><span class="ref-legend-dot crit"></span><strong style="color: var(--bad);">Critical</strong>&nbsp;— active dysbiosis driving BBB compromise; address first</span>
+      <span class="ref-legend-item"><span class="ref-legend-dot high"></span><strong style="color: var(--warn);">High</strong>&nbsp;— meaningful coverage gap; clear mechanism + evidence</span>
+      <span class="ref-legend-item"><span class="ref-legend-dot opt"></span><strong style="color: var(--info);">Optional</strong>&nbsp;— defer pending retest data</span>
+      <span class="ref-legend-item"><span class="ref-legend-dot ok"></span><strong style="color: var(--good);">Optimized</strong>&nbsp;— already in stack at therapeutic dose</span>
+      <span class="ref-legend-item"><span class="ref-legend-dot hold"></span><strong style="color: var(--ink-muted);">Hold</strong>&nbsp;— not recommended for Theo</span>
+    </div>
+
+    <div class="ref-table-wrap">
+      <table class="ref-table">
+        <thead>
+          <tr>
+            <th style="width: 9%;">Priority</th>
+            <th style="width: 16%;">Concern</th>
+            <th style="width: 10%;">Status</th>
+            <th style="width: 18%;">Product / Dose</th>
+            <th style="width: 17%;">Timing</th>
+            <th style="width: 18%;">Mechanism</th>
+            <th style="width: 12%;">Cons</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="crit"><td>🔴 Critical</td><td>R. gnavus 47× expansion</td><td>Open</td><td>NOW S. boulardii 10B CFU · ½–1 cap/day</td><td>7 AM or 7 PM meal</td><td>Mucin degradation → leaky gut → BBB</td><td>Mild gas wk 1</td></tr>
+          <tr class="crit"><td>🔴 Critical</td><td>Fusobacterium 32 → 49</td><td>Open</td><td>Goat colostrum (Mt. Capra or raw fresh) · ¼ tsp/day (load ½ tsp × 30d)</td><td>6:30 AM empty stomach · never warm</td><td>LPS → systemic inflammation → BBB</td><td>Mild GI; raw needs trusted source</td></tr>
+          <tr class="high"><td>🟡 High</td><td>Prevotella_9 absent · Faecalibacterium recovering</td><td>Partial</td><td>Plain psyllium husk · 1 tsp/d → 2 tsp BID</td><td>11:30 AM in broth + water · 2-hr AED spacing</td><td>Feeds SCFA producers + barrier support</td><td>Never dry; binds meds</td></tr>
+          <tr class="high"><td>🟡 High</td><td>PEA / microglial activation</td><td>Not in stack</td><td>Dr. Judy's PEA (OptiPEA) · ½ tsp/day (~943 mg)</td><td>7 AM meal w/ ghee</td><td>PPAR-α agonist; neuroprotective</td><td>Cost; rare soft stools</td></tr>
+          <tr class="high"><td>🟡 High</td><td>Curcumin bioavailability</td><td>Culinary tier</td><td>Optional: Thorne Meriva-SF · 250–500 mg BID</td><td>With meals + ghee</td><td>Reduces MMP-9; tight junction support</td><td>Current works at lower potency</td></tr>
+          <tr class="opt"><td>🟢 Optional</td><td>Urolithin A · Fusobacterium polyphenol pressure</td><td>Defer</td><td>Pomella® pomegranate · ~2,000 mg/day</td><td>With meal</td><td>Polyphenol → urolithin → BBB-direct</td><td>Add only if Fuso stays high at retest</td></tr>
+          <tr class="ok"><td>⚪ Optimized</td><td>Omega-3</td><td>✓ 3,000 mg DHA / 1,500 mg EPA</td><td>NOW DHA-500 × 6/day</td><td>With meals</td><td>DHA structurally required for BBB</td><td>—</td></tr>
+          <tr class="ok"><td>⚪ Optimized</td><td>CBD, Mg, B-Complex, TCVM, AB Healthy Gut, Sleep</td><td>✓ All current</td><td>Existing protocol</td><td>—</td><td>Downstream inflammation control + cofactors</td><td>—</td></tr>
+          <tr class="hold"><td>❌ Hold</td><td>Quercetin</td><td>Not started</td><td>—</td><td>—</td><td>MMP-9 + mast cell stabilization</td><td>Dose-dependent GABA antagonism</td></tr>
+          <tr class="hold"><td>❌ Hold</td><td>Resveratrol</td><td>Not started</td><td>—</td><td>—</td><td>Claudin-5 upregulation</td><td>Pro-inflammatory in 2018 canine study</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="ref-note">Implementation order (single-variable, vet-coordinated): wk 1–2 psyllium → wk 3–4 S. boulardii → wk 5–6 goat colostrum → PEA anytime. Retest microbiome at ~3 months to decide on pomegranate.</p>
+  </details>
 </section>
 
 <section class="section">
