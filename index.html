@@ -179,6 +179,35 @@
     color: var(--ink); line-height: 1.2;
   }
   .batch-stat-meta { font-size: 12px; color: var(--ink-muted); margin-top: 2px; }
+
+  /* Reminder cards — meal prep + order */
+  .batch-reminders {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+    margin-top: 18px;
+  }
+  @media (max-width: 700px) { .batch-reminders { grid-template-columns: 1fr; } }
+  .batch-reminder {
+    background: var(--paper);
+    border: 1px solid var(--line-soft);
+    border-left: 3px solid var(--info);
+    border-radius: 6px;
+    padding: 12px 14px;
+  }
+  .batch-reminder.imminent { border-left-color: var(--warn); background: var(--warn-bg); }
+  .batch-reminder.active   { border-left-color: var(--bad);  background: var(--bad-bg); }
+  .batch-reminder-icon {
+    font-size: 14px; margin-right: 4px;
+  }
+  .batch-reminder-label {
+    font-family: 'JetBrains Mono', monospace; font-size: 9px;
+    letter-spacing: 0.18em; color: var(--ink-muted);
+    text-transform: uppercase; margin-bottom: 4px;
+  }
+  .batch-reminder-val {
+    font-family: 'Fraunces', serif; font-size: 15px; font-weight: 600;
+    color: var(--ink); line-height: 1.25;
+  }
+  .batch-reminder-meta { font-size: 11px; color: var(--ink-muted); margin-top: 3px; }
   .batch-progress {
     margin-top: 18px;
     background: var(--line-soft); height: 16px; border-radius: 3px;
@@ -1305,6 +1334,22 @@ function formatDateLong(iso) {
   const d = new Date(iso + 'T00:00');
   return d.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 }
+// Find the Saturday on or before a given ISO date. If the date IS a Saturday, returns it.
+function saturdayOnOrBefore(iso) {
+  const d = new Date(iso + 'T00:00');
+  const dow = d.getDay(); // 0 Sun, 6 Sat
+  const back = dow === 6 ? 0 : (dow === 0 ? 1 : dow + 1);
+  return addDaysISO(iso, -back);
+}
+// Format a weekend window (Sat + Sun) from a Saturday ISO date
+function formatWeekendRange(satIso) {
+  const sat = new Date(satIso + 'T00:00');
+  const sun = new Date(addDaysISO(satIso, 1) + 'T00:00');
+  const opts = { month: 'short', day: 'numeric' };
+  const satStr = sat.toLocaleDateString(undefined, { weekday: 'short', ...opts });
+  const sunStr = sun.toLocaleDateString(undefined, { weekday: 'short', ...opts });
+  return `${satStr} – ${sunStr}`;
+}
 
 // ───────────────────────────────────────────────────────────────────────────
 // Sync to/from Sheet — with localStorage fallback
@@ -1525,6 +1570,28 @@ function renderBatchTracker() {
   const daysRemaining = daysBetween(today, dueDate);
   const pctUsed = Math.min(100, Math.max(0, (daysUsed / state.batch) * 100));
 
+  // Derived reminder windows
+  // Meal prep weekend = Saturday on or before the day before the due date
+  //   (we want the weekend BEFORE the batch runs out, not the weekend containing the due date itself)
+  const prepSat = saturdayOnOrBefore(addDaysISO(dueDate, -1));
+  // Order weekend = the Saturday one week before meal prep weekend
+  const orderSat = addDaysISO(prepSat, -7);
+  const daysToPrep  = daysBetween(today, prepSat);
+  const daysToOrder = daysBetween(today, orderSat);
+
+  function reminderState(daysAway) {
+    if (daysAway < 0)  return 'active';      // weekend has started or passed
+    if (daysAway <= 6) return 'imminent';    // within a week
+    return '';
+  }
+  function reminderStatus(daysAway, label) {
+    if (daysAway < -1) return `${label} weekend passed`;
+    if (daysAway === -1 || daysAway === 0) return `${label} this weekend`;
+    if (daysAway === 1) return `${label} tomorrow`;
+    if (daysAway <= 6) return `In ${daysAway} days`;
+    return `In ${daysAway} days`;
+  }
+
   let stateClass = 'healthy';
   let statusLine = '';
   if (daysRemaining < 0) {
@@ -1551,6 +1618,18 @@ function renderBatchTracker() {
         <div class="batch-stat-label">Next batch due</div>
         <div class="batch-stat-val">${formatDateLong(dueDate)}</div>
         <div class="batch-stat-meta">${statusLine}</div>
+      </div>
+    </div>
+    <div class="batch-reminders">
+      <div class="batch-reminder ${reminderState(daysToOrder)}">
+        <div class="batch-reminder-label"><span class="batch-reminder-icon">📦</span>Order raw food</div>
+        <div class="batch-reminder-val">${formatWeekendRange(orderSat)}</div>
+        <div class="batch-reminder-meta">${reminderStatus(daysToOrder, 'Order')} · 2 weeks before batch ends</div>
+      </div>
+      <div class="batch-reminder ${reminderState(daysToPrep)}">
+        <div class="batch-reminder-label"><span class="batch-reminder-icon">🔪</span>Meal prep</div>
+        <div class="batch-reminder-val">${formatWeekendRange(prepSat)}</div>
+        <div class="batch-reminder-meta">${reminderStatus(daysToPrep, 'Prep')} · weekend before batch ends</div>
       </div>
     </div>
     <div class="batch-progress" title="${daysUsed} of ${state.batch} days">
