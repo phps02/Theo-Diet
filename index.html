@@ -1128,17 +1128,48 @@ const LS_KEY = 'theo_diet_state_v1';
 // Client-side only; protects against accidental clicks when the page is shared.
 // Not real auth — anyone with browser dev tools can bypass.
 // ───────────────────────────────────────────────────────────────────────────
-const LOCK_PASSWORD = 'theo2026';
-const LOCK_LS_KEY = 'theo_diet_unlocked_v1';
+// Password is NOT stored in this HTML. User types it; we POST verify_secret
+// to Apps Script which checks against WRITE_SECRET in its Script Properties.
+//
+// Trade-off vs the older hardcoded-password design: unlock state cannot be
+// persisted in localStorage anymore (we'd need the password to re-validate
+// silently on reload, which would mean storing it locally — defeating the
+// purpose). So each browser session requires entering the password once.
+// Auto-locks after AUTO_LOCK_MINUTES of inactivity, just like seizure tracker.
+const AUTO_LOCK_MINUTES = 30;
+let _unlockedInSession = false;
+let _lastActivityAt = Date.now();
+
+// _writeSecret stores the password the user entered (sent to Apps Script on
+// every write). In-memory only — cleared on lock or browser close.
+let _writeSecret = '';
 
 function isUnlocked() {
-  return localStorage.getItem(LOCK_LS_KEY) === '1';
+  if (!_unlockedInSession) return false;
+  const minutesSinceActivity = (Date.now() - _lastActivityAt) / 60000;
+  if (minutesSinceActivity > AUTO_LOCK_MINUTES) {
+    _unlockedInSession = false;
+    _writeSecret = '';
+    applyLockState();
+    return false;
+  }
+  return true;
 }
-function setUnlocked(yes) {
-  if (yes) localStorage.setItem(LOCK_LS_KEY, '1');
-  else localStorage.removeItem(LOCK_LS_KEY);
+
+function recordDietActivity() {
+  if (_unlockedInSession) _lastActivityAt = Date.now();
+}
+
+function setUnlocked(yes, secret) {
+  if (yes) {
+    _unlockedInSession = true;
+    _writeSecret = secret || '';
+    _lastActivityAt = Date.now();
+  } else {
+    _unlockedInSession = false;
+    _writeSecret = '';
+  }
   applyLockState();
-  // Re-render the batch tracker so the action row appears/disappears
   if (typeof renderBatchTracker === 'function') renderBatchTracker();
 }
 function applyLockState() {
@@ -1151,17 +1182,34 @@ function applyLockState() {
     pill.title = unlocked ? 'Click to lock (read-only)' : 'Click to unlock editing';
   }
 }
-function toggleLock() {
+async function toggleLock() {
   if (isUnlocked()) {
     setUnlocked(false);
     return;
   }
   const pwd = prompt('Enter password to enable editing:');
   if (pwd === null) return; // cancelled
-  if (pwd === LOCK_PASSWORD) {
-    setUnlocked(true);
-  } else {
-    alert('Incorrect password.');
+  if (!pwd) {
+    alert('Enter a password.');
+    return;
+  }
+  try {
+    const r = await fetch(SHEET_API, {
+      method: 'POST',
+      headers: {'Content-Type': 'text/plain;charset=utf-8'},
+      body: JSON.stringify({action: 'verify_secret', secret: pwd})
+    });
+    if (!r.ok) throw new Error('Network error (HTTP ' + r.status + ')');
+    const resp = await r.json();
+    if (resp.ok) {
+      setUnlocked(true, pwd);
+    } else if (resp.error === 'Unauthorized') {
+      alert('Incorrect password.');
+    } else {
+      alert('Server error: ' + (resp.error || 'unknown'));
+    }
+  } catch (e) {
+    alert('Could not reach server — check connection. (' + e.message + ')');
   }
 }
 
@@ -1406,9 +1454,27 @@ async function saveState() {
     const r = await fetch(SHEET_API, {
       method: 'POST',
       headers: {'Content-Type': 'text/plain;charset=utf-8'},
-      body: JSON.stringify({ action: 'setDietState', ...state })
+      body: JSON.stringify({ action: 'setDietState', secret: _writeSecret, ...state })
     });
     if (!r.ok) throw new Error('HTTP ' + r.status);
+    // Apps Script returns HTTP 200 even on auth/server errors — inspect body.
+    try {
+      const resp = await r.json();
+      if (resp && resp.error) {
+        if (resp.error === 'Unauthorized') {
+          // Server rejected our secret — clear local unlock state and prompt
+          setUnlocked(false);
+          alert('Unauthorized: server rejected the password. Please unlock again.');
+          throw new Error('Unauthorized');
+        }
+        throw new Error(resp.error);
+      }
+    } catch (jsonErr) {
+      // If we already threw above, rethrow
+      if (jsonErr.message === 'Unauthorized' || (jsonErr.message && jsonErr.message !== 'Unexpected end of JSON input')) {
+        throw jsonErr;
+      }
+    }
     setSyncStatus('saved');
   } catch (e) {
     console.warn('saveState failed:', e);
