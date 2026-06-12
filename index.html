@@ -938,7 +938,7 @@ block) ═══════════════════ -->
 <section class="section">
   <details class="advanced">
     <summary>Free glutamate analysis · per recipe</summary>
-    <p class="small-note">Total + free glutamate by ingredient, calculated against the recipe at 1850 kcal/day plus the daily extras. Reference for the gut–brain axis / BBB conversation — the recipe is not high-Glu.</p>
+    <p class="small-note">Total + free glutamate by ingredient for the <strong id="glut-recipe-name" style="color:var(--ink);">active recipe</strong> at 1850 kcal/day. Reference for the gut–brain axis / BBB conversation. Switches with the selected recipe.</p>
 
     <div class="ref-table-wrap">
       <table class="ref-table">
@@ -950,18 +950,10 @@ block) ═══════════════════ -->
             <th style="width: 38%;">Note</th>
           </tr>
         </thead>
-        <tbody>
-          <tr><td><strong style="color: var(--ink);">Recipe base (duck + fish, 1850 kcal)</strong></td><td style="text-align: right;">~26,400 mg</td><td style="text-align: right;">~330 mg</td><td>Fresh raw meat is low in free Glu (beef/pork ~10 mg/100g, chicken ~20–50, fresh sardine ~10–20)</td></tr>
-          <tr><td>Green Juju FD (⅔ cup ≈ 29 g)</td><td style="text-align: right;">~640 mg</td><td style="text-align: right;">~90 mg</td><td>Estimated from leafy-green family proxies (~30 mg/100g fresh-equivalent across blend)</td></tr>
-          <tr><td>Pastured egg (1 large)</td><td style="text-align: right;">~1,650 mg</td><td style="text-align: right;">~25 mg</td><td>Standard reference (egg = 23 mg/100g free)</td></tr>
-          <tr><td>BJ's fish meat stock (2 oz)</td><td style="text-align: right;">~250 mg</td><td style="text-align: right;">~45 mg</td><td>Light extraction; collagen-rich, low free</td></tr>
-          <tr><td>Bison bone broth (1 oz, 4-hr simmer)</td><td style="text-align: right;">~310 mg</td><td style="text-align: right;">~80 mg</td><td>Covance lab interpolation for 4-hr cook time</td></tr>
-          <tr><td>FD duck feet (1 pc)</td><td style="text-align: right;">~480 mg</td><td style="text-align: right;">~20 mg</td><td>Collagen-heavy, low free</td></tr>
-          <tr><td>FD half duck neck</td><td style="text-align: right;">~430 mg</td><td style="text-align: right;">~38 mg</td><td>Bone-in poultry, moderate free</td></tr>
-          <tr style="background: var(--line-soft);"><td><strong style="color: var(--ink);">Combined daily total</strong></td><td style="text-align: right;"><strong style="color: var(--ink);">~30,160 mg</strong></td><td style="text-align: right;"><strong style="color: var(--ink);">~628 mg</strong></td><td><strong style="color: var(--ink);">~2.1% free</strong> — comparable to one bowl miso soup</td></tr>
-        </tbody>
+        <tbody id="glut-tbody"></tbody>
       </table>
     </div>
+    <p class="small-note" id="glut-verdict" style="margin-top:8px;"></p>
 
     <details class="advanced" style="margin-top: 14px;">
       <summary>Methodology + sources</summary>
@@ -1367,8 +1359,8 @@ const RECIPE1_MEAT = [
   { name: 'Beef Liver',             raw: 1.44,  dry: 0.42, kcal: 56  },
 ];
 const RECIPE1_FISH = [
-  { name: 'Anchovies',                 raw: 2.42, dry: 0.88, kcal: 144 },
-  { name: 'Sardines, canned in water', raw: 2.42, dry: 0.98, kcal: 143 },
+  { name: 'Anchovies, canned in water (no salt)', raw: 2.42, dry: 0.88, kcal: 144 },
+  { name: 'Sardines, canned in water (no salt)',  raw: 2.42, dry: 0.98, kcal: 143 },
 ];
 const RECIPE1_SUPP = [
   { name: "Dr. Harvey's Paradigm",                 amount: 1.00,  unit: 'scoop', kcal: 64  },
@@ -1397,7 +1389,7 @@ const RECIPE2_MEAT = [
   { name: 'Beef Heart',             raw: 1.08,  dry: 0.25, kcal: 34  },
 ];
 const RECIPE2_FISH = [
-  { name: 'Salmon', raw: 3.69, dry: 1.49, kcal: 135 },
+  { name: 'Salmon, canned in water (no salt)', raw: 3.69, dry: 1.49, kcal: 135 },
 ];
 const RECIPE2_SUPP = [
   { name: 'MCT Oil',                               amount: 2.00,  unit: 'tbsp',  kcal: 266, note: 'now counted inside the 1850 kcal budget' },
@@ -1527,6 +1519,22 @@ const FALLBACK_RECIPES = [
     supplements: RECIPE1_SUPP,
     nrc: RECIPE1_NRC,
     interactions: RECIPE1_INTERACTIONS,
+    glutamate: {
+      baseName: 'Recipe base (duck + anchovy/sardine, 1850 kcal)',
+      rows: [
+        { src: 'Duck Tenders, skinless', total: 11863, free: 143, note: 'poultry breast; free ~20–50/100g' },
+        { src: 'Duck Heart', total: 2403, free: 28, note: 'organ muscle' },
+        { src: 'Anchovies, canned in water (no salt)', total: 2333, free: 41, note: 'canned in water (NOT cured) — low free Glu (est.)' },
+        { src: 'Duck Feet', total: 2074, free: 15, note: 'collagen-heavy, low free' },
+        { src: 'Sardines, canned in water (no salt)', total: 2058, free: 34, note: 'canned in water — low free Glu (est.)' },
+        { src: 'Duck Neck, skinless', total: 1844, free: 29, note: 'bone-in poultry' },
+        { src: 'Bison Tripe', total: 1539, free: 15, note: 'low protein, low free' },
+        { src: 'Beef Heart', total: 1283, free: 13, note: 'organ muscle' },
+        { src: 'Beef Liver', total: 1143, free: 12, note: 'organ' },
+      ],
+      total: 26540, free: 330, pctFree: '1.2%',
+      verdict: 'Fish are canned in water (not salt-cured), so free Glu stays low — earlier cured-anchovy figures were an error. Low in absolute terms; not Glu-restrictive-warranting.'
+    },
   },
   {
     id: 'recipe2',
@@ -1541,6 +1549,21 @@ const FALLBACK_RECIPES = [
     supplements: RECIPE2_SUPP,
     nrc: RECIPE2_NRC,
     interactions: RECIPE2_INTERACTIONS,
+    glutamate: {
+      baseName: 'Recipe base (duck + salmon, 1850 kcal)',
+      rows: [
+        { src: 'Duck Tenders, skinless', total: 12899, free: 156, note: 'poultry breast; free ~20–50/100g' },
+        { src: 'Salmon, canned in water (no salt)', total: 3034, free: 42, note: 'canned in water (NOT cured) — low free Glu (est.)' },
+        { src: 'Bison Tripe', total: 2305, free: 23, note: 'low protein, low free' },
+        { src: 'Duck Feet', total: 2212, free: 16, note: 'collagen-heavy, low free' },
+        { src: 'Duck Neck, skinless', total: 1966, free: 31, note: 'bone-in poultry' },
+        { src: 'Duck Heart', total: 1592, free: 18, note: 'organ muscle' },
+        { src: 'Beef Liver', total: 1429, free: 15, note: 'organ' },
+        { src: 'Beef Heart', total: 765, free: 8, note: 'organ muscle' },
+      ],
+      total: 26200, free: 309, pctFree: '1.2%',
+      verdict: 'Canned salmon in water (not cured) — low free Glu, essentially the same as Recipe 1. Low in absolute terms; not Glu-restrictive-warranting.'
+    },
   },
 ];
 // RECIPES is mutable: starts as the fallback, gets replaced by the Sheet registry
@@ -1728,8 +1751,8 @@ async function fetchState() {
     if (!RECIPES.find(r2 => r2.id === state.recipe)) state.recipe = RECIPES[0].id;
     // Migration: if no history yet but a legacy lastBatchDate exists, seed one entry
     if (state.batchHistory.length === 0 && state.lastBatchDate) {
-      const ar = activeRecipe();
-      state.batchHistory = [{ date: state.lastBatchDate, recipe: state.recipe, version: ar ? ar.version : 1, batchDays: state.batch }];
+      const r = resolveRecipe(state.recipe, null);
+      state.batchHistory = [{ date: state.lastBatchDate, recipe: state.recipe, version: r ? r.version : 1, batchDays: state.batch }];
     }
     // Migration: stamp version on any historical entries that predate versioning
     state.batchHistory = (state.batchHistory || []).map(b => {
@@ -2212,7 +2235,67 @@ function renderAll() {
   renderIngredients();
   renderNRC();
   renderInteractions();
+  renderGlutamate();
   renderBatchTracker();
+}
+
+// Shared extras glutamate (same items both recipes for now; hardcoded, calc once)
+const EXTRAS_GLUT = {
+  rows: [
+    { src: 'Green Juju Just Greens (⅔ cup ≈ 29 g FD)', total: 640, free: 90, note: 'leafy-green proxies (~30 mg/100g free, est.)' },
+    { src: 'Pastured egg (1 large)', total: 1650, free: 25, note: 'egg = 23 mg/100g free (direct)' },
+    { src: "BJ's fish broth (2 oz)", total: 250, free: 45, note: 'light extraction; collagen-rich, low free' },
+    { src: 'Bison bone broth (1 oz, plain)', total: 310, free: 80, note: 'Covance interpolation, 4-hr cook' },
+    { src: 'FD duck feet (1 pc)', total: 480, free: 20, note: 'collagen-heavy, low free' },
+    { src: 'FD half duck neck', total: 430, free: 38, note: 'bone-in poultry, moderate free' },
+  ],
+  total: 3760, free: 298,
+};
+
+function renderGlutamate() {
+  const R = activeRecipe();
+  const g = R && R.glutamate;
+  const tbody = document.getElementById('glut-tbody');
+  const nameEl = document.getElementById('glut-recipe-name');
+  const verdictEl = document.getElementById('glut-verdict');
+  if (!tbody) return;
+  if (!g) { tbody.innerHTML = '<tr><td colspan="4">No glutamate data for this recipe.</td></tr>'; return; }
+  if (nameEl) nameEl.textContent = R.label;
+  const fmt = n => '~' + n.toLocaleString() + ' mg';
+  const ex = EXTRAS_GLUT;
+  const combTotal = g.total + ex.total;
+  const combFree = g.free + ex.free;
+  const pctComb = (combFree / combTotal * 100).toFixed(1) + '%';
+
+  let html = '';
+  // Recipe base rows
+  html += g.rows.map(r =>
+    `<tr><td>${r.src}</td><td style="text-align:right;">${fmt(r.total)}</td><td style="text-align:right;">${fmt(r.free)}</td><td>${r.note || ''}</td></tr>`
+  ).join('');
+  // Recipe base subtotal
+  html += `<tr style="background: var(--line-soft);">
+    <td><strong style="color: var(--ink);">${g.baseName}</strong></td>
+    <td style="text-align:right;"><strong style="color: var(--ink);">${fmt(g.total)}</strong></td>
+    <td style="text-align:right;"><strong style="color: var(--ink);">${fmt(g.free)}</strong></td>
+    <td><strong style="color: var(--ink);">${g.pctFree} free</strong></td></tr>`;
+  // Extras rows
+  html += ex.rows.map(r =>
+    `<tr><td style="opacity:0.85;">+ ${r.src}</td><td style="text-align:right;">${fmt(r.total)}</td><td style="text-align:right;">${fmt(r.free)}</td><td>${r.note || ''}</td></tr>`
+  ).join('');
+  // Extras subtotal
+  html += `<tr style="background: var(--line-soft);">
+    <td><strong style="color: var(--ink);">Daily extras subtotal</strong></td>
+    <td style="text-align:right;"><strong style="color: var(--ink);">${fmt(ex.total)}</strong></td>
+    <td style="text-align:right;"><strong style="color: var(--ink);">${fmt(ex.free)}</strong></td>
+    <td>shared, same both recipes (for now)</td></tr>`;
+  // Combined daily total
+  html += `<tr style="background: var(--plum); ">
+    <td><strong style="color: #fff;">Combined daily total (base + extras)</strong></td>
+    <td style="text-align:right;"><strong style="color: #fff;">${fmt(combTotal)}</strong></td>
+    <td style="text-align:right;"><strong style="color: #fff;">${fmt(combFree)}</strong></td>
+    <td><strong style="color: #fff;">${pctComb} free</strong></td></tr>`;
+  tbody.innerHTML = html;
+  if (verdictEl) verdictEl.textContent = (g.verdict || '') + ` Combined with daily extras: ${pctComb} free — low, comparable to a bowl of miso soup. Not Glu-restrictive-warranting.`;
 }
 
 function bindControls() {
