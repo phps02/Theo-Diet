@@ -1699,6 +1699,7 @@ async function loadRecipes() {
         supplements: blob.supplements || [],
         nrc: blob.nrc || [],
         interactions: blob.interactions || [],
+        glutamate: blob.glutamate || null,
       };
     }).filter(r => r.id && Array.isArray(r.nrc));
     if (parsed.length === 0) throw new Error('no valid recipes parsed');
@@ -2254,7 +2255,11 @@ const EXTRAS_GLUT = {
 
 function renderGlutamate() {
   const R = activeRecipe();
-  const g = R && R.glutamate;
+  let g = R && R.glutamate;
+  if (!g) {
+    const fb = FALLBACK_RECIPES.find(r => r.id === (R && R.id));
+    g = fb && fb.glutamate;
+  }
   const tbody = document.getElementById('glut-tbody');
   const nameEl = document.getElementById('glut-recipe-name');
   const verdictEl = document.getElementById('glut-verdict');
