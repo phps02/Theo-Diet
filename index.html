@@ -147,6 +147,31 @@
     letter-spacing: 0.05em; text-transform: uppercase; cursor: pointer;
   }
   .ctrl-toggle button.active { background: var(--ink); color: var(--bg); }
+  .ctrl-select {
+    font-family: 'Fraunces', serif; font-size: 16px; font-weight: 600;
+    cursor: pointer; -webkit-appearance: none; appearance: none;
+    background: transparent; border: none; color: var(--ink); width: 100%;
+    line-height: 1.2;
+  }
+  body:not(.is-unlocked) .ctrl-select { opacity: 0.55; pointer-events: none; }
+  .batch-history { margin-top: 14px; border-top: 1px solid var(--line-soft); padding-top: 10px; }
+  .batch-history summary {
+    cursor: pointer; font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-muted);
+  }
+  .batch-hist-list { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+  .batch-hist-row {
+    display: grid; grid-template-columns: 1fr auto auto auto; gap: 10px; align-items: center;
+    padding: 6px 10px; background: var(--bg-warm); border-radius: 5px; font-size: 12px;
+  }
+  .batch-hist-recipe { color: var(--accent); font-weight: 600; }
+  .batch-hist-days { color: var(--ink-muted); font-family: 'JetBrains Mono', monospace; font-size: 10px; }
+  .batch-hist-del {
+    border: none; background: transparent; color: var(--ink-muted); cursor: pointer;
+    font-size: 12px; padding: 2px 4px; border-radius: 3px;
+  }
+  .batch-hist-del:hover { color: var(--bad); background: var(--bad-bg); }
+  body:not(.is-unlocked) .batch-hist-del { display: none; }
 
   .section { max-width: 1300px; margin: 24px auto 0; padding: 0 32px; }
   .panel {
@@ -819,6 +844,11 @@ block) ═══════════════════ -->
 
 <section class="controls">
   <div class="ctrl-card">
+    <div class="ctrl-label">Recipe</div>
+    <select id="ctrl-recipe" class="ctrl-input ctrl-select"></select>
+    <div class="ctrl-meta" id="ctrl-recipe-meta">—</div>
+  </div>
+  <div class="ctrl-card">
     <div class="ctrl-label">Calorie multiplier</div>
     <input type="number" id="ctrl-mult" class="ctrl-input" min="0.5" max="2" step="0.05" value="1">
     <div class="ctrl-meta" id="ctrl-mult-meta">×1850 = 1850 kcal/day</div>
@@ -1220,39 +1250,22 @@ const DEFAULTS = {
   batch: 44,
   form: 'raw',
   lastBatchDate: '2026-04-26',
+  recipe: 'recipe1',     // active recipe id (synced)
+  batchHistory: [],      // append-only log: [{date, recipe, batchDays}], synced via Batches tab
 };
 
 // ───────────────────────────────────────────────────────────────────────────
 // RECIPE DATA
+// ═══════════════════════════════════════════════════════════════════════════
+// TO ADD A NEW RECIPE: copy one full { id, label, ... } block inside the
+// RECIPES array below, give it a unique `id`, and fill in its own meat / fish /
+// supplements / nrc / interactions. The picker, NRC panel, ingredient table,
+// and batch stamp all read from the active recipe automatically — no other
+// code changes needed. Keep `id` stable once batches reference it (the batch
+// log stores the id, not the label).
 // ───────────────────────────────────────────────────────────────────────────
-const RECIPE_KCAL_BASE = 1850;
 
-const MEAT_FLAT = [
-  { name: 'Duck Tenders, skinless', raw: 14.43, dry: 3.54, kcal: 520 },
-  { name: 'Bison Tripe',            raw: 3.62,  dry: 0.57, kcal: 231 },
-  { name: 'Duck Heart',             raw: 3.26,  dry: 0.97, kcal: 129 },
-  { name: 'Duck Neck, skinless',    raw: 2.71,  dry: 0.80, kcal: 89  },
-  { name: 'Duck Feet',              raw: 2.71,  dry: 1.04, kcal: 155 },
-  { name: 'Beef Heart',             raw: 1.81,  dry: 0.41, kcal: 57  },
-  { name: 'Beef Liver',             raw: 1.44,  dry: 0.42, kcal: 56  },
-];
-
-const FISH_GROUP = [
-  { name: 'Anchovies',                 raw: 2.42, dry: 0.88, kcal: 144 },
-  { name: 'Sardines, canned in water', raw: 2.42, dry: 0.98, kcal: 143 },
-];
-
-const SUPPLEMENTS = [
-  { name: "Dr. Harvey's Paradigm",                 amount: 1.00,  unit: 'scoop', kcal: 64  },
-  { name: 'Ghee, grassfed',                        amount: 1.66,  unit: 'tbsp',  kcal: 173 },
-  { name: 'Hempseed Oil',                          amount: 2.00,  unit: 'tsp',   kcal: 88  },
-  { name: 'NOW Zinc Picolinate, 50mg',             amount: 1.00,  unit: 'pill',  kcal: 0,   note: 'whole pill — give with one meal' },
-  { name: 'Solgar Liquid Vitamin E (14.9IU/drop)', amount: 11.00, unit: 'drop',  kcal: 0   },
-  { name: 'NOW Pure Kelp Powder (450mcg/scoop)',   amount: 0.90,  unit: 'scoop', kcal: 0   },
-];
-
-// NRC data (page 6 of formulator's report)
-const NRC_DATA = [
+const RECIPE1_NRC = [
   { group: 'Amino Acids', rows: [
     { name: 'Crude Protein',           actual: 196.745, min: 37.00, ra: 46.25, unit: 'g' },
     { name: 'Arginine',                actual: 10.152,  min: 1.30,  ra: 1.63,  unit: 'g' },
@@ -1313,8 +1326,8 @@ const NRC_DATA = [
   ]},
 ];
 
-// Diet × supplement interactions
-const INTERACTIONS = [
+// Recipe 1 interactions (anchovy/sardine, ghee, no MCT in recipe)
+const RECIPE1_INTERACTIONS = [
   { title: 'Vitamin B6 — recipe + active B-complex', cls: 'info',
     numbers: [['Diet','4.4 mg/day'],['Active B-Complex (1 cap)','~25 mg'],['Stable Core (Neuroplex)','8.9 mg'],['Daily total','~38 mg/day'],['NRC RA','0.69 mg'],['Multiple of RA','~55×']],
     body: 'B6 has been an active dosing question since the P5P → Thorne swap. Currently below the 50 mg target with vet-approved Active B-Complex at 1 cap/day. Well below dose ranges associated with peripheral neuropathy in dogs (>200 mg/kg sustained), but a stacked source: monitor if any new B-vitamin product gets added.' },
@@ -1344,6 +1357,216 @@ const INTERACTIONS = [
     body: 'On the lower end of the safe range, which is normal for raw recipes heavy on muscle meat and organs. Bone content (duck necks + duck feet) keeps it above 1:1.' }
 ];
 
+const RECIPE1_MEAT = [
+  { name: 'Duck Tenders, skinless', raw: 14.43, dry: 3.54, kcal: 520 },
+  { name: 'Bison Tripe',            raw: 3.62,  dry: 0.57, kcal: 231 },
+  { name: 'Duck Heart',             raw: 3.26,  dry: 0.97, kcal: 129 },
+  { name: 'Duck Neck, skinless',    raw: 2.71,  dry: 0.80, kcal: 89  },
+  { name: 'Duck Feet',              raw: 2.71,  dry: 1.04, kcal: 155 },
+  { name: 'Beef Heart',             raw: 1.81,  dry: 0.41, kcal: 57  },
+  { name: 'Beef Liver',             raw: 1.44,  dry: 0.42, kcal: 56  },
+];
+const RECIPE1_FISH = [
+  { name: 'Anchovies',                 raw: 2.42, dry: 0.88, kcal: 144 },
+  { name: 'Sardines, canned in water', raw: 2.42, dry: 0.98, kcal: 143 },
+];
+const RECIPE1_SUPP = [
+  { name: "Dr. Harvey's Paradigm",                 amount: 1.00,  unit: 'scoop', kcal: 64  },
+  { name: 'Ghee, grassfed',                        amount: 1.66,  unit: 'tbsp',  kcal: 173 },
+  { name: 'Hempseed Oil',                          amount: 2.00,  unit: 'tsp',   kcal: 88  },
+  { name: 'NOW Zinc Picolinate, 50mg',             amount: 1.00,  unit: 'pill',  kcal: 0,   note: 'whole pill — give with one meal' },
+  { name: 'Solgar Liquid Vitamin E (14.9IU/drop)', amount: 11.00, unit: 'drop',  kcal: 0   },
+  { name: 'NOW Pure Kelp Powder (450mcg/scoop)',   amount: 0.90,  unit: 'scoop', kcal: 0   },
+];
+
+// ═══════════════════════════════════════════════════════════════════════════
+// RECIPE 2 — Perfectly Rawsome PDF (Ronny LeJeune), formulated June 2, 2026.
+// Source = Ronny's Excel export (PDF is authoritative). 1850 kcal/day @ 85 lb.
+// Per Phebe's earlier curation: "FDR" labels dropped; the two duplicate
+// freeze-dried + fresh pairs (Beef Liver, Duck Heart) are merged into one line
+// each (raw oz, dry oz, and kcal summed). Meat+fish reconciles to 1,479 kcal;
+// + MCT 266 + Hempseed 44 + Ultra DHA 61 = 1,850 total.
+// ═══════════════════════════════════════════════════════════════════════════
+const RECIPE2_MEAT = [
+  { name: 'Duck Tenders, skinless', raw: 15.69, dry: 3.84, kcal: 547 },
+  { name: 'Bison Tripe',            raw: 5.42,  dry: 0.86, kcal: 346 },
+  { name: 'Duck Feet',              raw: 2.89,  dry: 1.11, kcal: 166 },
+  { name: 'Duck Neck, skinless',    raw: 2.89,  dry: 0.86, kcal: 95  },
+  { name: 'Duck Heart',             raw: 2.16,  dry: 0.70, kcal: 86  }, // merged: 1.08 fresh + 1.08 freeze-dried
+  { name: 'Beef Liver',             raw: 1.80,  dry: 0.52, kcal: 70  }, // merged: 0.90 fresh + 0.90 freeze-dried
+  { name: 'Beef Heart',             raw: 1.08,  dry: 0.25, kcal: 34  },
+];
+const RECIPE2_FISH = [
+  { name: 'Salmon', raw: 3.69, dry: 1.49, kcal: 135 },
+];
+const RECIPE2_SUPP = [
+  { name: 'MCT Oil',                               amount: 2.00,  unit: 'tbsp',  kcal: 266, note: 'now counted inside the 1850 kcal budget' },
+  { name: 'Hempseed Oil',                          amount: 1.00,  unit: 'tsp',   kcal: 44  },
+  { name: 'NOW Foods Ultra DHA',                   amount: 6.00,  unit: 'pill',  kcal: 61  },
+  { name: 'BioSchwartz Magnesium Bisglycinate',    amount: 3.00,  unit: 'pill',  kcal: 0   },
+  { name: 'NOW Zinc Picolinate, 50mg',             amount: 1.00,  unit: 'pill',  kcal: 0,   note: 'whole pill — give with one meal' },
+  { name: 'Solgar Liquid Vitamin E (14.9IU/drop)', amount: 11.00, unit: 'drop',  kcal: 0   },
+  { name: 'NOW Pure Kelp Powder (450mcg/scoop)',   amount: 0.90,  unit: 'scoop', kcal: 0   },
+  { name: 'NOW Taurine Pure Powder (500mg)',       amount: 0.125, unit: 'tsp',   kcal: 0,   note: 'epilepsy support — not required for NRC balance' },
+  { name: 'Standard Process Neuroplex',            amount: 2.00,  unit: 'pill',  kcal: 0,   note: 'epilepsy support' },
+  { name: 'NOW Foods Ubiquinol (200mg)',           amount: 2.00,  unit: 'pill',  kcal: 0,   note: 'epilepsy support' },
+  { name: 'Wholistic Pet Organics Ester-C (3000mg)', amount: 3.25, unit: 'tsp',  kcal: 0,   note: 'epilepsy support' },
+];
+// Recipe 2 NRC — transcribed from PDF page 6 (NRC 2006, adult maintenance, 1850 kcal)
+const RECIPE2_NRC = [
+  { group: 'Amino Acids', rows: [
+    { name: 'Crude Protein',           actual: 187.163, min: 37.00, ra: 46.25, unit: 'g' },
+    { name: 'Arginine',                actual: 10.811,  min: 1.30,  ra: 1.63,  unit: 'g' },
+    { name: 'Histidine',               actual: 4.478,   min: 0.68,  ra: 0.89,  unit: 'g' },
+    { name: 'Isoleucine',              actual: 7.829,   min: 1.39,  ra: 1.76,  unit: 'g' },
+    { name: 'Methionine',              actual: 4.478,   min: 1.20,  ra: 1.54,  unit: 'g' },
+    { name: 'Methionine + Cystine',    actual: 6.784,   min: 2.41,  ra: 3.02,  unit: 'g' },
+    { name: 'Leucine',                 actual: 13.619,  min: 2.50,  ra: 3.15,  unit: 'g' },
+    { name: 'Lysine',                  actual: 14.080,  min: 1.30,  ra: 1.63,  unit: 'g' },
+    { name: 'Phenylalanine',           actual: 6.876,   min: 1.67,  ra: 2.09,  unit: 'g' },
+    { name: 'Phenylalanine + Tyrosine',actual: 12.912,  min: 2.74,  ra: 3.42,  unit: 'g' },
+    { name: 'Threonine',               actual: 7.153,   min: 1.57,  ra: 2.00,  unit: 'g' },
+    { name: 'Tryptophan',              actual: 2.091,   min: 0.52,  ra: 0.65,  unit: 'g' },
+    { name: 'Valine',                  actual: 8.393,   min: 1.81,  ra: 2.28,  unit: 'g' },
+    { name: 'Taurine',                 actual: 0.851,   min: 0.00,  ra: 0.00,  unit: 'g', noTarget: true },
+  ]},
+  { group: 'Fats & Fatty Acids', rows: [
+    { name: 'Total Fat',               actual: 114.046, min: 18.50, ra: 25.53, unit: 'g' },
+    { name: 'Linoleic Acid',           actual: 6.446,   min: 4.44,  ra: 5.18,  unit: 'g' },
+    { name: 'Alpha-Linolenic Acid',    actual: 0.584,   min: 0.17,  ra: 0.20,  unit: 'g' },
+    { name: 'Arachidonic Acid',        actual: 0.410,   min: 0.00,  ra: 0.00,  unit: 'g', noTarget: true },
+    { name: 'EPA + DHA',               actual: 5.657,   min: 0.20,  ra: 0.20,  unit: 'g' },
+  ]},
+  { group: 'Vitamins', rows: [
+    { name: 'Vitamin A',         actual: 2695.509, min: 560.55, ra: 701.15, unit: 'mcg' },
+    { name: 'Vitamin C',         actual: 30.702,   min: 0.00,   ra: 0.00,   unit: 'mg', noTarget: true },
+    { name: 'Vitamin D',         actual: 15.423,   min: 5.09,   ra: 6.29,   unit: 'mcg' },
+    { name: 'Vitamin E',         actual: 109.813,  min: 11.10,  ra: 13.88,  unit: 'mg' },
+    { name: 'Vitamin K',         actual: 0.000,    min: 0.00,   ra: 0.00,   unit: 'mg', noTarget: true },
+    { name: 'Thiamin (B1)',      actual: 2.203,    min: 0.83,   ra: 1.04,   unit: 'mg' },
+    { name: 'Riboflavin (B2)',   actual: 4.396,    min: 1.94,   ra: 2.41,   unit: 'mg' },
+    { name: 'Niacin (B3)',       actual: 39.361,   min: 6.29,   ra: 7.86,   unit: 'mg' },
+    { name: 'Pantothenic (B5)',  actual: 11.662,   min: 5.55,   ra: 6.94,   unit: 'mg' },
+    { name: 'Pyridoxine (B6)',   actual: 4.406,    min: 0.56,   ra: 0.69,   unit: 'mg' },
+    { name: 'Biotin (B7)',       actual: 210.906,  min: 0.00,   ra: 0.00,   unit: 'mcg', noTarget: true },
+    { name: 'Folic Acid (B9)',   actual: 280.477,  min: 99.90,  ra: 124.88, unit: 'mcg' },
+    { name: 'Cobalamin (B12)',   actual: 53.687,   min: 12.95,  ra: 16.19,  unit: 'mcg' },
+    { name: 'Choline',           actual: 384.787,  min: 629.00, ra: 786.25, unit: 'mcg', isCholine: true },
+  ]},
+  { group: 'Minerals', rows: [
+    { name: 'Calcium',           actual: 3.330,    min: 0.93,    ra: 1.85,   unit: 'g' },
+    { name: 'Phosphorus',        actual: 3.238,    min: 1.39,    ra: 1.39,   unit: 'g' },
+    { name: 'Magnesium',         actual: 357.621,  min: 83.25,   ra: 277.50, unit: 'mg' },
+    { name: 'Sodium',            actual: 1923.209, min: 138.75,  ra: 370.00, unit: 'mg', highFlag: true },
+    { name: 'Potassium',         actual: 2.470,    min: 1.85,    ra: 1.85,   unit: 'g' },
+    { name: 'Chloride',          actual: 2884.813, min: 555.00,  ra: 555.00, unit: 'mg' },
+    { name: 'Iron',              actual: 34.002,   min: 13.88,   ra: 13.88,  unit: 'mg' },
+    { name: 'Copper',            actual: 7.378,    min: 2.78,    ra: 2.78,   unit: 'mg' },
+    { name: 'Zinc',              actual: 68.782,   min: 27.75,   ra: 27.75,  unit: 'mg' },
+    { name: 'Manganese',         actual: 2.521,    min: 2.22,    ra: 2.22,   unit: 'mg' },
+    { name: 'Selenium',          actual: 230.438,  min: 161.88,  ra: 161.88, unit: 'mcg' },
+    { name: 'Iodine',            actual: 407.000,  min: 323.75,  ra: 407.00, unit: 'mcg' },
+  ]},
+  { group: 'Nutrient Balance', rows: [
+    { name: 'Calcium : Phosphorus',  text: '1.03 : 1', target: '1:1 to 2:1' },
+    { name: 'Linoleic : α-Linolenic',text: '11.01 : 1', target: '~5:1 typical' },
+    { name: 'Omega-6 : Omega-3',     text: '1.06 : 1', target: '<5:1 ideal' },
+  ]},
+];
+// Recipe 2 interactions. Recipe-independent cards (B6, magnesium, CBD timing)
+// carried forward verbatim. Recipe-dependent cards rewritten to Recipe 2's
+// actual PDF numbers — REVIEW THIS TEXT (Claude-authored, medical-adjacent).
+const RECIPE2_INTERACTIONS = [
+  { title: 'Vitamin B6 — recipe + active B-complex', cls: 'info',
+    numbers: [['Diet','4.4 mg/day'],['Active B-Complex (1 cap)','~25 mg'],['Stable Core (Neuroplex)','8.9 mg'],['Daily total','~38 mg/day'],['NRC RA','0.69 mg'],['Multiple of RA','~55×']],
+    body: 'B6 has been an active dosing question since the P5P → Thorne swap. Currently below the 50 mg target with vet-approved Active B-Complex at 1 cap/day. Well below dose ranges associated with peripheral neuropathy in dogs (>200 mg/kg sustained), but a stacked source: monitor if any new B-vitamin product gets added.' },
+  { title: 'MCT now counted inside the 1850 kcal budget', cls: 'good',
+    numbers: [['Recipe fat','114.0 g/day (4.5× RA)'],['MCT Oil','2 tbsp = 266 kcal, in recipe'],['NRC fat RA','25.5 g']],
+    body: 'Unlike the earlier build where MCT sat on top of the calorie target as an unbudgeted add-on, Recipe 2 folds MCT (2 tbsp, 266 kcal) into the formulated 1850 kcal. The meat load was trimmed to make room. No multiplier compensation needed — the fat calories are already accounted for.' },
+  { title: 'Omega-3 forward — EPA+DHA at ~28× RA', cls: 'info',
+    numbers: [['EPA+DHA','5.66 g/day'],['NRC RA','0.20 g'],['Omega-6:Omega-3','1.06 : 1']],
+    body: 'Salmon plus Ultra DHA push EPA+DHA much higher than Recipe 1 (2.10 g). This is an intentional, omega-3-dominant profile aligned with the high-dose omega-3 anti-epileptogenic rationale. Linoleic acid dropped to 6.45 g but still clears the 5.18 g RA.' },
+  { title: 'Sodium — lower than Recipe 1', cls: 'good',
+    numbers: [['Diet','1,923 mg/day'],['NRC min','139 mg'],['NRC RA','370 mg']],
+    body: 'The salmon swap (vs sardines + anchovies) and removal of Dr. Harvey\'s Paradigm roughly halve sodium versus Recipe 1 (4,222 mg). Still above RA but a meaningfully lighter salt load. No concern in a healthy dog; relevant only if cardiac or renal issues develop.' },
+  { title: 'Selenium — trending down (watch item)', cls: 'info',
+    numbers: [['Diet','230 mcg/day (1.4× RA)'],['NRC RA','161.88 mcg'],['Whole-blood (Jul 2025)','482 ppb (ref 200–450)']],
+    body: 'Recipe 2 delivers less selenium than Recipe 1 (261 mcg), the direction you want given Theo\'s prior high whole-blood selenium flag. Still above RA. Worth folding a selenium read into routine bloodwork with diet notes.' },
+  { title: 'Copper — unchanged, 2.7× RA (discuss)', cls: 'warn',
+    numbers: [['Diet','7.38 mg/day'],['NRC RA','2.78 mg'],['Multiple of RA','~2.7×']],
+    body: 'Copper barely moved from Recipe 1 (7.81 mg) — it is driven by the liver load, not by the Paradigm removal. Given the Embark ATP7B copper-carrier finding, this is the one number worth raising with Ronny: whether copper can come down without unbalancing the recipe.' },
+  { title: 'Magnesium — recipe + supplement', cls: 'good',
+    numbers: [['Diet','357.6 mg/day'],['Mag Glycinate supp','50 mg'],['Daily total','~408 mg'],['NRC RA','277.5 mg']],
+    body: 'Combined intake is ~1.5× RA, well within tolerable range. Documented kidney-disease contraindication — if any future renal panel flags, this stack becomes reviewable. Currently fine.' },
+  { title: 'CBD timing relative to meals', cls: 'info',
+    numbers: [['Recipe fat','114.0 g/day (high-fat)'],['CBD bioavailability with fat','~4× higher than fasted']],
+    body: 'High-fat meal increases CBD absorption ~4×. If CBD is dosed 30–60 min after a meal (vs. on an empty stomach), absorption is more consistent. (Note: CBD is currently stopped during pheno titration — applies if reintroduced.)' },
+  { title: 'Calcium : Phosphorus', cls: 'good',
+    numbers: [['Recipe Ca:P','1.03 : 1'],['Healthy adult target','1:1 to 2:1']],
+    body: 'On the lower end of the safe range, normal for raw recipes heavy on muscle meat and organs. Bone content (duck necks + duck feet) keeps it above 1:1.' }
+];
+
+// ───────────────────────────────────────────────────────────────────────────
+// RECIPES — the selectable set. Add new recipes here (see header note above).
+// ───────────────────────────────────────────────────────────────────────────
+// FALLBACK_RECIPES — used only if the Recipes Sheet tab is unreachable, so the
+// tool still works standalone on GitHub Pages. When the Sheet loads, RECIPES is
+// replaced by the registry rows. Source fields note PDF-derived-but-curated
+// provenance (FDR lines merged per Phebe's curation; totals match the PDFs).
+const FALLBACK_RECIPES = [
+  {
+    id: 'recipe1',
+    version: 1,
+    dateLocked: '2024-10-25',
+    status: 'active',
+    label: 'Recipe 1 — Duck + Anchovy/Sardine',
+    source: 'Perfectly Rawsome PDF · Ronny LeJeune · Oct 25, 2024 (curated: FDR merged)',
+    kcalBase: 1850,
+    meat: RECIPE1_MEAT,
+    fish: RECIPE1_FISH,
+    supplements: RECIPE1_SUPP,
+    nrc: RECIPE1_NRC,
+    interactions: RECIPE1_INTERACTIONS,
+  },
+  {
+    id: 'recipe2',
+    version: 1,
+    dateLocked: '2026-06-02',
+    status: 'active',
+    label: 'Recipe 2 — Duck + Salmon + MCT',
+    source: 'Perfectly Rawsome PDF · Ronny LeJeune · Jun 2, 2026 (curated: FDR merged)',
+    kcalBase: 1850,
+    meat: RECIPE2_MEAT,
+    fish: RECIPE2_FISH,
+    supplements: RECIPE2_SUPP,
+    nrc: RECIPE2_NRC,
+    interactions: RECIPE2_INTERACTIONS,
+  },
+];
+// RECIPES is mutable: starts as the fallback, gets replaced by the Sheet registry
+// at startup (loadRecipes). activeRecipe() keys off the latest active version.
+let RECIPES = FALLBACK_RECIPES.slice();
+function activeRecipe() {
+  // active version of the selected recipe id, else first available
+  const matches = RECIPES.filter(r => r.id === state.recipe);
+  if (matches.length) {
+    const active = matches.filter(r => r.status === 'active');
+    return latestVersion(active.length ? active : matches);
+  }
+  return RECIPES[0];
+}
+function latestVersion(list) {
+  return list.reduce((a, b) => ((b.version || 1) > (a.version || 1) ? b : a), list[0]);
+}
+// Resolve a specific id+version (used by batch stamps pointing at frozen versions)
+function resolveRecipe(id, version) {
+  if (version == null) {
+    const m = RECIPES.filter(r => r.id === id);
+    return m.length ? latestVersion(m) : null;
+  }
+  return RECIPES.find(r => r.id === id && (r.version || 1) === version) || null;
+}
+
 // ───────────────────────────────────────────────────────────────────────────
 // State
 // ───────────────────────────────────────────────────────────────────────────
@@ -1363,6 +1586,19 @@ function fmtAmount(amount, unit) { return fmtNum(amount, 2) + ' ' + unit; }
 function fmtOz(oz) { return fmtNum(oz, 2) + ' oz'; }
 function fmtLb(oz) { return fmtNum(oz / 16, 2) + ' lb'; }
 function getMeatWeight(item) { return state.form === 'dry' ? item.dry : item.raw; }
+function safeParseHistory(s) { try { const v = JSON.parse(s); return Array.isArray(v) ? v : []; } catch (_) { return []; } }
+function sortedHistory() {
+  return [...(state.batchHistory || [])].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+}
+function latestBatch() {
+  const h = sortedHistory();
+  return h.length ? h[0] : null;
+}
+function recipeLabel(id, version) {
+  const r = resolveRecipe(id, version);
+  if (!r) return id || '—';
+  return (version != null && r.version) ? `${r.label} · v${r.version}` : r.label;
+}
 function todayISO() {
   const d = new Date();
   return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
@@ -1415,6 +1651,63 @@ function setSyncStatus(status, msg) {
   pill.textContent = msg || labels[status] || status;
 }
 
+// Load the recipe registry from the Recipes Sheet tab. Each row is one recipe
+// version: { id, version, name, dateLocked, status, source, kcalBase, json }
+// where `json` is the full recipe blob (meat/fish/supplements/nrc/interactions).
+// On any failure or empty result, keep FALLBACK_RECIPES so the tool still works.
+async function loadRecipes() {
+  try {
+    const r = await fetch(SHEET_API + '?action=getRecipes&t=' + Date.now(), {cache: 'no-store'});
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const rows = await r.json();
+    if (!Array.isArray(rows) || rows.length === 0) throw new Error('empty registry');
+    const parsed = rows.map(row => {
+      const blob = typeof row.json === 'string' ? JSON.parse(row.json) : (row.json || {});
+      return {
+        id: row.id,
+        version: Number(row.version) || 1,
+        dateLocked: row.dateLocked || '',
+        status: row.status || 'active',
+        label: row.name || blob.label || row.id,
+        source: row.source || blob.source || '',
+        kcalBase: Number(row.kcalBase) || blob.kcalBase || 1850,
+        meat: blob.meat || [],
+        fish: blob.fish || [],
+        supplements: blob.supplements || [],
+        nrc: blob.nrc || [],
+        interactions: blob.interactions || [],
+      };
+    }).filter(r => r.id && Array.isArray(r.nrc));
+    if (parsed.length === 0) throw new Error('no valid recipes parsed');
+    RECIPES = parsed;
+  } catch (e) {
+    console.warn('loadRecipes failed — using built-in fallback recipes:', e);
+    RECIPES = FALLBACK_RECIPES.slice();
+  }
+  // Ensure the selected recipe id still resolves
+  if (!RECIPES.find(r => r.id === state.recipe)) state.recipe = RECIPES[0].id;
+}
+
+// Load batch log from the Batches tab (append-only). Falls back to whatever is
+// already in state (e.g. localStorage / migration) if the tab is unreachable.
+async function fetchBatchHistory() {
+  try {
+    const r = await fetch(SHEET_API + '?action=getBatches&t=' + Date.now(), {cache: 'no-store'});
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const rows = await r.json();
+    if (Array.isArray(rows)) {
+      state.batchHistory = rows.map(b => ({
+        date: b.date, recipe: b.recipe,
+        version: Number(b.version) || 1,
+        batchDays: Number(b.batchDays) || 0
+      }));
+    }
+  } catch (e) {
+    console.warn('fetchBatchHistory failed — keeping local batch history:', e);
+    if (!Array.isArray(state.batchHistory)) state.batchHistory = [];
+  }
+}
+
 async function fetchState() {
   setSyncStatus('loading', '⟳ Loading from Sheet…');
   try {
@@ -1427,6 +1720,22 @@ async function fetchState() {
       batch: Number(data.batch) || DEFAULTS.batch,
       form: data.form || DEFAULTS.form,
       lastBatchDate: data.lastBatchDate || DEFAULTS.lastBatchDate,
+      recipe: data.recipe || DEFAULTS.recipe,
+    });
+    // Batch history comes from its own Batches tab (append-only), not dietState
+    await fetchBatchHistory();
+    // Validate active recipe id still exists; fall back if a recipe was removed
+    if (!RECIPES.find(r2 => r2.id === state.recipe)) state.recipe = RECIPES[0].id;
+    // Migration: if no history yet but a legacy lastBatchDate exists, seed one entry
+    if (state.batchHistory.length === 0 && state.lastBatchDate) {
+      const ar = activeRecipe();
+      state.batchHistory = [{ date: state.lastBatchDate, recipe: state.recipe, version: ar ? ar.version : 1, batchDays: state.batch }];
+    }
+    // Migration: stamp version on any historical entries that predate versioning
+    state.batchHistory = (state.batchHistory || []).map(b => {
+      if (b.version != null) return b;
+      const r = resolveRecipe(b.recipe, null);
+      return { ...b, version: r ? r.version : 1 };
     });
     localStorage.setItem(LS_KEY, JSON.stringify(state));
     setSyncStatus('saved');
@@ -1454,7 +1763,9 @@ async function saveState() {
     const r = await fetch(SHEET_API, {
       method: 'POST',
       headers: {'Content-Type': 'text/plain;charset=utf-8'},
-      body: JSON.stringify({ action: 'setDietState', secret: _writeSecret, ...state })
+      body: JSON.stringify({ action: 'setDietState', secret: _writeSecret,
+        lastBatchDate: state.lastBatchDate, mult: state.mult, am: state.am,
+        batch: state.batch, form: state.form, recipe: state.recipe })
     });
     if (!r.ok) throw new Error('HTTP ' + r.status);
     // Apps Script returns HTTP 200 even on auth/server errors — inspect body.
@@ -1487,6 +1798,8 @@ async function saveState() {
 // ───────────────────────────────────────────────────────────────────────────
 function renderIngredients() {
   const tbody = document.getElementById('ing-tbody');
+  const R = activeRecipe();
+  const MEAT_FLAT = R.meat, FISH_GROUP = R.fish, SUPPLEMENTS = R.supplements;
   const m = state.mult;
   const amPct = state.am / 100;
   const pmPct = 1 - amPct;
@@ -1614,7 +1927,7 @@ function renderBatchTracker() {
   const host = document.getElementById('batch-tracker');
   document.getElementById('bt-batch-mirror').textContent = state.batch;
 
-  if (!state.lastBatchDate) {
+  if (!latestBatch()) {
     host.innerHTML = `
       <div class="batch-stat">
         <div class="batch-stat-label">No batch recorded yet</div>
@@ -1630,7 +1943,10 @@ function renderBatchTracker() {
   }
 
   const today = todayISO();
-  const last = state.lastBatchDate;
+  const current = latestBatch();
+  const last = current ? current.date : state.lastBatchDate;
+  const currentRecipeId = current ? current.recipe : state.recipe;
+  const currentRecipeVer = current ? current.version : (activeRecipe() ? activeRecipe().version : null);
   const dueDate = addDaysISO(last, state.batch);
   const daysUsed = daysBetween(last, today);
   const daysRemaining = daysBetween(today, dueDate);
@@ -1679,6 +1995,7 @@ function renderBatchTracker() {
         <div class="batch-stat-label">Last batch prepared</div>
         <div class="batch-stat-val">${formatDateLong(last)}</div>
         <div class="batch-stat-meta">${daysUsed} day${daysUsed===1?'':'s'} ago · ${state.batch}-day batch</div>
+        <div class="batch-stat-meta" style="margin-top:4px;"><strong style="color:var(--accent);">▦ ${recipeLabel(currentRecipeId, currentRecipeVer)}</strong></div>
       </div>
       <div class="batch-stat ${stateClass}">
         <div class="batch-stat-label">Next batch due</div>
@@ -1702,6 +2019,7 @@ function renderBatchTracker() {
       <div class="batch-progress-fill ${stateClass}" style="width: ${pctUsed}%;"></div>
     </div>
     <div class="batch-progress-label">Day ${daysUsed} of ${state.batch} · ${pctUsed.toFixed(0)}% used</div>
+    ${renderBatchHistoryHTML()}
     <div class="batch-actions">
       <button class="btn" onclick="recordBatchToday()">📋 Record new batch as today</button>
       <span style="color:var(--ink-muted);font-family:'JetBrains Mono',monospace;font-size:10px;">or set date:</span>
@@ -1711,18 +2029,71 @@ function renderBatchTracker() {
   `;
 }
 
+function renderBatchHistoryHTML() {
+  const h = sortedHistory();
+  if (h.length <= 1) return ''; // nothing to show beyond the current batch
+  const past = h.slice(1); // current batch already shown in the stat card
+  const rows = past.map(b => {
+    const delBtn = `<button class="batch-hist-del" title="Remove this entry" onclick="deleteBatch('${b.date}','${b.recipe}',${b.version != null ? b.version : 'null'})">✕</button>`;
+    return `<div class="batch-hist-row">
+      <span class="batch-hist-date">${formatDateLong(b.date)}</span>
+      <span class="batch-hist-recipe">▦ ${recipeLabel(b.recipe, b.version)}</span>
+      <span class="batch-hist-days">${b.batchDays || '—'}-day</span>
+      ${delBtn}
+    </div>`;
+  }).join('');
+  return `<details class="batch-history">
+    <summary>Batch history · ${past.length} earlier batch${past.length===1?'':'es'}</summary>
+    <div class="batch-hist-list">${rows}</div>
+  </details>`;
+}
+
 function recordBatchToday() {
   if (!isUnlocked()) return;
-  state.lastBatchDate = todayISO();
-  renderBatchTracker();
-  scheduleSave();
+  appendBatch(todayISO());
 }
 function recordBatchOnDate(iso) {
   if (!isUnlocked()) return;
   if (!iso) return;
-  state.lastBatchDate = iso;
+  appendBatch(iso);
+}
+function appendBatch(iso) {
+  const ar = activeRecipe();
+  const entry = { date: iso, recipe: state.recipe, version: ar ? ar.version : 1, batchDays: state.batch };
+  state.batchHistory = [...(state.batchHistory || []), entry];
+  state.lastBatchDate = latestBatch() ? latestBatch().date : iso; // keep legacy field on the newest
   renderBatchTracker();
+  // Append to the Batches tab (preferred), and also persist dietState for legacy fields
+  postBatchAppend(entry);
   scheduleSave();
+}
+function deleteBatch(iso, recipe, version) {
+  if (!isUnlocked()) return;
+  state.batchHistory = (state.batchHistory || []).filter(b =>
+    !(b.date === iso && b.recipe === recipe && (version == null || b.version === version)));
+  const lb = latestBatch();
+  state.lastBatchDate = lb ? lb.date : '';
+  renderBatchTracker();
+  postBatchDelete(iso, recipe);
+  scheduleSave();
+}
+async function postBatchAppend(entry) {
+  try {
+    await fetch(SHEET_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'addBatch', secret: _writeSecret, ...entry })
+    });
+  } catch (e) { console.warn('addBatch failed (cached locally):', e); }
+}
+async function postBatchDelete(date, recipe) {
+  try {
+    await fetch(SHEET_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'deleteBatch', secret: _writeSecret, date, recipe })
+    });
+  } catch (e) { console.warn('deleteBatch failed (cached locally):', e); }
 }
 
 // ───────────────────────────────────────────────────────────────────────────
@@ -1775,6 +2146,7 @@ function renderNRCRow(row) {
 }
 function renderNRC() {
   const tbody = document.getElementById('nrc-tbody');
+  const NRC_DATA = activeRecipe().nrc;
   let html = `<tr>
     <th>Nutrient</th>
     <th class="numeric">In recipe</th>
@@ -1791,6 +2163,7 @@ function renderNRC() {
 
 function renderInteractions() {
   const host = document.getElementById('interaction-list');
+  const INTERACTIONS = activeRecipe().interactions;
   host.innerHTML = INTERACTIONS.map(int => {
     const numbersHtml = int.numbers.map(([k, v]) =>
       `<span><strong>${v}</strong> ${k}</span>`
@@ -1807,13 +2180,25 @@ function renderInteractions() {
 // Control wiring
 // ───────────────────────────────────────────────────────────────────────────
 function updateMeta() {
+  const base = activeRecipe().kcalBase;
   document.getElementById('ctrl-mult-meta').textContent =
-    `×${RECIPE_KCAL_BASE} = ${Math.round(state.mult * RECIPE_KCAL_BASE)} kcal/day`;
+    `×${base} = ${Math.round(state.mult * base)} kcal/day`;
   document.getElementById('ctrl-am-meta').textContent = `PM = ${100 - state.am}%`;
   document.getElementById('ctrl-batch-meta').textContent = `${state.batch}-day batch`;
 }
 
 function syncControlsFromState() {
+  const sel = document.getElementById('ctrl-recipe');
+  if (sel) {
+    const ids = [...new Set(RECIPES.map(r => r.id))];
+    sel.innerHTML = ids.map(id => {
+      const r = resolveRecipe(id, null); // latest version for this id
+      return `<option value="${id}">${r ? r.label : id}</option>`;
+    }).join('');
+    sel.value = state.recipe;
+    const meta = document.getElementById('ctrl-recipe-meta');
+    if (meta) { const ar = activeRecipe(); meta.textContent = ar ? `${ar.source}${ar.version ? ' · v'+ar.version : ''}` : ''; }
+  }
   document.getElementById('ctrl-mult').value = state.mult;
   document.getElementById('ctrl-am').value = state.am;
   document.getElementById('ctrl-batch').value = state.batch;
@@ -1825,10 +2210,22 @@ function syncControlsFromState() {
 function renderAll() {
   updateMeta();
   renderIngredients();
+  renderNRC();
+  renderInteractions();
   renderBatchTracker();
 }
 
 function bindControls() {
+  const recipeSel = document.getElementById('ctrl-recipe');
+  if (recipeSel) {
+    recipeSel.addEventListener('change', e => {
+      state.recipe = e.target.value;
+      const meta = document.getElementById('ctrl-recipe-meta');
+      if (meta) meta.textContent = activeRecipe().source || '';
+      renderAll();
+      scheduleSave();
+    });
+  }
   document.getElementById('ctrl-mult').addEventListener('input', e => {
     const v = parseFloat(e.target.value);
     if (!isNaN(v) && v > 0) { state.mult = v; renderAll(); scheduleSave(); }
@@ -1867,14 +2264,16 @@ function resetControls() {
 async function init() {
   applyLockState();
   bindControls();
-  renderNRC();
-  renderInteractions();
 
-  // First, render with defaults so the page isn't blank
+  // First, render with fallback recipes so the page isn't blank
   syncControlsFromState();
   renderAll();
 
-  // Then fetch from sheet (or fall back to localStorage)
+  // Load the recipe registry from the Sheet (falls back silently if unreachable)
+  await loadRecipes();
+  syncControlsFromState();
+
+  // Then fetch state/batch history (or fall back to localStorage)
   await fetchState();
   syncControlsFromState();
   renderAll();
